@@ -1755,6 +1755,20 @@ function agAttBonus(agName, ym){
   const eligible=(late===0&&onTime>0);
   return {has:true,days:recs.length,onTime,late,eligible,amt:eligible?bonusAmt():0};
 }
+// অনুভূমিক বার তালিকা (বেস্ট প্রোডাক্ট ইত্যাদি)
+function barList(pairs){
+  if(!pairs.length) return '<div class="empty">কোনো ডেটা নেই।</div>';
+  const mx=Math.max(1,...pairs.map(p=>p.val));
+  return pairs.map(p=>`<div style="margin:9px 0">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${p.label}</span><span style="font-weight:700">${p.sub}</span></div>
+    <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(p.val/mx*100))}%"></div></div>
+  </div>`).join('');
+}
+// নির্দিষ্ট দিনের এজেন্ট স্ট্যাট (আজকের ড্যাশবোর্ড)
+function agDayStats(agentId, d){
+  const list=CCORDERS.filter(o=>o.confirm_date===d && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ);
+  return agStats(list);
+}
 function renderAgReport(){
   const box=$('ag_reportBox'); if(!box) return;
   fillAgentSel('ag_repAgent', true);
@@ -1775,12 +1789,29 @@ function renderAgReport(){
   const prevYm=prevMonth(ym);
   const cur=agStats(monthOrders(agentId,ym)), prev=agStats(monthOrders(agentId,prevYm));
   const bonus=agAttBonus(agName, ym);
+  const today=agDayStats(agentId, todayStr());
   const diff=cur.rev-prev.rev, pct=prev.rev>0?Math.round(diff/prev.rev*100):(cur.rev>0?100:0), up=diff>=0;
   const arrow=up?'▲':'▼', col=up?'var(--profit)':'var(--loss)';
+  const cmx=Math.max(1,cur.rev,prev.rev);
+  const cmpBars=`<div style="margin:6px 0 2px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(ym)} (এই মাস)</span><span style="font-weight:700">${money(cur.rev)}</span></div>
+      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(cur.rev/cmx*100))}%"></div></div></div>
+    <div style="margin:10px 0 2px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(prevYm)} (গত মাস)</span><span style="font-weight:700;color:var(--muted)">${money(prev.rev)}</span></div>
+      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(prev.rev/cmx*100))}%;background:var(--muted);opacity:.55"></div></div></div>`;
+  const prodMap={};
+  monthOrders(agentId,ym).filter(isDelivered).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
+  const prodPairs=Object.keys(prodMap).map(k=>({label:k,val:prodMap[k],sub:prodMap[k]+' পিস'})).sort((a,b)=>b.val-a.val).slice(0,6);
   box.innerHTML=`
-   <div class="summary" style="margin:14px 0">
-     <div class="chip"><div class="lbl">কনফার্ম অর্ডার</div><div class="val">${cur.conf}</div></div>
-     <div class="chip"><div class="lbl">ডেলিভারড</div><div class="val" style="color:var(--profit)">${cur.deliv}</div></div>
+   <div class="infobar" style="margin:14px 0;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
+     <span>📅 <b>আজকের</b> (${niceDate(todayStr())})</span>
+     <span>কনফার্ম <b>${today.conf}</b></span>
+     <span>কনভার্ট <b style="color:var(--profit)">${today.deliv}</b></span>
+     <span>কমিশন <b>${money(today.comm)}</b></span>
+   </div>
+   <div class="summary" style="margin:0 0 14px">
+     <div class="chip"><div class="lbl">কনফার্ম অর্ডার (${niceMonth(ym)})</div><div class="val">${cur.conf}</div></div>
+     <div class="chip"><div class="lbl">ডেলিভারড (কনভার্ট)</div><div class="val" style="color:var(--profit)">${cur.deliv}</div></div>
      <div class="chip"><div class="lbl">ক্যান্সেল</div><div class="val" style="color:var(--loss)">${cur.canc}</div></div>
      <div class="chip"><div class="lbl">পেন্ডিং</div><div class="val">${cur.pend}</div></div>
      <div class="chip"><div class="lbl">কনভার্সন রেট</div><div class="val">${cur.convRate}%</div></div>
@@ -1788,15 +1819,14 @@ function renderAgReport(){
      <div class="chip"><div class="lbl">ডেলিভারি বিক্রি</div><div class="val small">${money(cur.rev)}</div></div>
      <div class="chip"><div class="lbl">হাজিরা বোনাস</div><div class="val small">${bonus.has?(bonus.eligible?money(bonus.amt)+' ✓':'অযোগ্য ('+bonus.late+' দিন লেট)'):'হাজিরা নেই'}</div></div>
    </div>
-   <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0 0 12px;padding:14px">
-     <div class="m" style="font-weight:600;color:var(--ink);margin-bottom:8px">এই মাস vs গত মাস — ডেলিভারি বিক্রি</div>
-     <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-       <div><div class="m">${niceMonth(ym)}</div><div style="font-size:21px;font-weight:700">${money(cur.rev)}</div></div>
-       <div style="color:${col};font-weight:700;font-size:16px">${arrow} ${Math.abs(pct)}%</div>
-       <div><div class="m">${niceMonth(prevYm)}</div><div style="font-size:16px;font-weight:600;color:var(--muted)">${money(prev.rev)}</div></div>
-     </div>
+   <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0 0 12px;padding:16px">
+     <div class="m" style="font-weight:600;color:var(--ink);margin-bottom:10px">এই মাস vs গত মাস — ডেলিভারি বিক্রি <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></div>
+     ${cmpBars}
    </div>
-   <div class="infobar" style="margin:0">${cur.best?`🏆 এই মাসের বেস্ট প্রোডাক্ট: <b>${cur.best}</b> — ${cur.bestQty} পিস ডেলিভারড`:'এই মাসে এখনো কোনো ডেলিভারি হয়নি।'}</div>`;
+   <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0;padding:16px">
+     <div class="m" style="font-weight:600;color:var(--ink);margin-bottom:6px">🏆 ${niceMonth(ym)} — সবচেয়ে বেশি বিক্রি হওয়া প্রোডাক্ট</div>
+     ${barList(prodPairs)}
+   </div>`;
 }
 
 function fillSettings(){
