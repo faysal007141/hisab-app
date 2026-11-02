@@ -1887,7 +1887,7 @@ if($('ag_save')) $('ag_save').onclick=async()=>{
   if(!date||!cnum){ toast('তারিখ ও কাস্টমার নম্বর দিন',true); return; }
   if(!items.length){ toast('অন্তত একটা প্রোডাক্ট দিন',true); return; }
   b.disabled=true;
-  const rec={ confirm_date:date, agent_id:agentId||null, agent_name: ag?(ag.name||ag.email):'',
+  const rec={ order_no:'AP'+Date.now(), confirm_date:date, agent_id:agentId||null, agent_name: ag?(ag.name||ag.email):'',
     customer_number:cnum, customer_name:$('ag_cname').value.trim()||null, address:$('ag_addr').value.trim()||null,
     note:$('ag_note').value.trim()||null, status:'Pending', business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
   const {data,error}=await db.from('cc_orders').insert(rec).select().single();
