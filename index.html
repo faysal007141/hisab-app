@@ -109,7 +109,8 @@
   .card h2{margin:0 0 14px;font-size:17px;font-weight:700}
   .card h2 .sub{display:block;font-weight:500;font-size:12.5px;color:var(--muted);margin-top:2px}
   label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 5px}
-  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2)}
+  input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2)}
+  textarea{line-height:1.5;min-height:70px;resize:vertical;box-sizing:border-box}
   input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(13,115,119,.12)}
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
@@ -813,7 +814,7 @@
         <div class="field"><label>এলাকা (location)</label><input type="text" id="z_loc" placeholder="যেমন: কুমিল্লা" autocomplete="off"></div>
         <div class="field"><label>কুরিয়ার পার্সেল আইডি</label><input type="text" id="z_parcel" placeholder="কনসাইনমেন্ট আইডি" autocomplete="off"></div>
       </div>
-      <div class="field"><label>নোট (কেন জোন চেঞ্জ / অন্য তথ্য)</label><textarea id="z_note" rows="2" placeholder="যেমন: কাস্টমার পরে নিবে বলেছে / ঠিকানা ভুল ছিল" autocomplete="off" style="resize:vertical"></textarea></div>
+      <div class="field"><label>নোট (কেন জোন চেঞ্জ / অন্য তথ্য)</label><textarea id="z_note" rows="2" placeholder="যেমন: কাস্টমার পরে নিবে বলেছে / ঠিকানা ভুল ছিল" autocomplete="off"></textarea></div>
       <button class="btn" id="z_save">ওয়েটিং লিস্টে যোগ করুন</button>
     </div>
 
@@ -836,6 +837,7 @@
       <div id="zcInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px"></div>
       <div class="field"><label>নতুন কাস্টমারের নাম</label><input type="text" id="zc_name" placeholder="যাকে এখন পাঠাবেন" autocomplete="off"></div>
       <div class="field"><label>নতুন কাস্টমার নম্বর</label><input type="text" id="zc_num" placeholder="01XXXXXXXXX" autocomplete="off"></div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><textarea id="zc_note" rows="2" placeholder="জোন চেঞ্জ সম্পর্কে কোনো তথ্য থাকলে লিখুন"></textarea></div>
       <button class="btn" id="zcConfirm">জোন চেঞ্জ কনফার্ম</button>
     </div>
   </div>
@@ -1673,6 +1675,7 @@ document.addEventListener('click',ev=>{ const b=ev.target.closest('.zc-do'); if(
   ZC_ID=z.id;
   $('zcInfo').innerHTML=`<b>${z.product||''}</b> · ${z.first_name||''} ${z.first_number||''}${z.location?' · '+z.location:''}${z.parcel_id?'<br>কুরিয়ার আইডি: '+z.parcel_id:''}`;
   $('zc_name').value=''; $('zc_num').value='';
+  if($('zc_note')) $('zc_note').value = z.note || '';
   $('zcModal').classList.add('show');
 });
 if($('zcClose')) $('zcClose').onclick=()=>$('zcModal').classList.remove('show');
@@ -1680,9 +1683,10 @@ if($('zcModal')) $('zcModal').addEventListener('click',e=>{ if(e.target===$('zcM
 if($('zcConfirm')) $('zcConfirm').onclick=async()=>{
   if(!ZC_ID) return;
   const name=$('zc_name').value.trim(), num=$('zc_num').value.trim();
+  const note=$('zc_note')?$('zc_note').value.trim():'';
   if(!num){ toast('নতুন কাস্টমার নম্বর দিন',true); return; }
   const b=$('zcConfirm'); b.disabled=true;
-  const {error}=await db.from('zone_changes').update({ status:'done', second_name:name||null, second_number:num, change_date:todayStr() }).eq('id',ZC_ID);
+  const {error}=await db.from('zone_changes').update({ status:'done', second_name:name||null, second_number:num, note:note||null, change_date:todayStr() }).eq('id',ZC_ID);
   b.disabled=false;
   if(error){ toast('হয়নি: '+(error.message||''),true); return; }
   $('zcModal').classList.remove('show'); ZC_ID=null;
