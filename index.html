@@ -813,6 +813,7 @@
         <div class="field"><label>এলাকা (location)</label><input type="text" id="z_loc" placeholder="যেমন: কুমিল্লা" autocomplete="off"></div>
         <div class="field"><label>কুরিয়ার পার্সেল আইডি</label><input type="text" id="z_parcel" placeholder="কনসাইনমেন্ট আইডি" autocomplete="off"></div>
       </div>
+      <div class="field"><label>নোট (কেন জোন চেঞ্জ / অন্য তথ্য)</label><textarea id="z_note" rows="2" placeholder="যেমন: কাস্টমার পরে নিবে বলেছে / ঠিকানা ভুল ছিল" autocomplete="off" style="resize:vertical"></textarea></div>
       <button class="btn" id="z_save">ওয়েটিং লিস্টে যোগ করুন</button>
     </div>
 
@@ -1627,6 +1628,7 @@ function renderZoneWait(){
   box.innerHTML=`<div class="infobar" style="margin-bottom:10px">বর্তমানে ওয়েটিং-এ <b>${list.length}টি</b> পার্সেল</div>`+list.map(z=>`<div class="item"><div>
       <div class="t">${z.product||''} <span class="badge ot">ওয়েটিং</span></div>
       <div class="m">${niceDate(zDateOf(z))} · ${z.first_name||''} ${z.first_number||''}${z.qty?' · '+z.qty+' পিস':''}${z.price?' · '+money(z.price):''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+      ${z.note?`<div class="m" style="color:var(--muted);font-style:italic">📝 ${z.note}</div>`:''}
     </div><div style="text-align:right;white-space:nowrap">
       <button class="btn ghost zc-do" data-id="${z.id}" style="width:auto;padding:7px 12px;font-size:13px">জোন চেঞ্জ করুন</button>
       <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
@@ -1644,6 +1646,7 @@ function renderZoneDone(){
   box.innerHTML=head+shown.map(z=>`<div class="item"><div>
       <div class="t">${z.product||''} <span class="badge oh">জোন চেঞ্জ</span></div>
       <div class="m">${niceDate(z.change_date||zDateOf(z))} · ${z.first_number||''} → ${z.second_name||''} ${z.second_number||''}${z.qty?' · '+z.qty+' পিস':''}${z.price?' · '+money(z.price):''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+      ${z.note?`<div class="m" style="color:var(--muted);font-style:italic">📝 ${z.note}</div>`:''}
     </div><div style="text-align:right">
       <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
     </div></div>`).join('');
@@ -1655,11 +1658,12 @@ if($('z_save')) $('z_save').onclick=async()=>{
     qty: parseInt($('z_qty').value)||null, price: n($('z_price').value)||null,
     first_name:$('z_fname').value.trim()||null, first_number:$('z_first').value.trim(),
     location:$('z_loc').value.trim()||null, parcel_id:$('z_parcel').value.trim()||null,
+    note:$('z_note').value.trim()||null,
     business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
   if(!rec.entry_date||!rec.first_number){ toast('তারিখ ও কাস্টমার নম্বর দিন',true); return; }
   b.disabled=true; const {error}=await db.from('zone_changes').insert(rec); b.disabled=false;
   if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
-  ['z_fname','z_first','z_loc','z_parcel','z_qty','z_price'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['z_fname','z_first','z_loc','z_parcel','z_qty','z_price','z_note'].forEach(id=>{const el=$(id);if(el)el.value='';});
   toast('ওয়েটিং লিস্টে যোগ হয়েছে ✓'); await loadAll();
 };
 /* জোন চেঞ্জ মডাল */
