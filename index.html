@@ -214,6 +214,7 @@
       <div class="tab" data-tab="stock">📦 স্টক</div>
       <div class="tab" data-tab="cash">🏦 ক্যাশ</div>
       <div class="tab" data-tab="salary">👥 বেতন</div>
+      <div class="tab" data-tab="attend">🕐 হাজিরা</div>
       <div class="tab" data-tab="report">📊 রিপোর্ট</div>
       <div class="tab" data-tab="log">🧾 লগ</div>
       <div class="tab" data-tab="agent">👤 এজেন্ট</div>
@@ -537,6 +538,20 @@
     <div class="card"><h2>কর্মচারী তালিকা</h2><div class="list" id="empList"><div class="empty">লোড হচ্ছে…</div></div></div>
 
     <div class="card">
+      <h2>অগ্রিম দিন<span class="sub">মাসের মাঝে কাউকে অগ্রিম দিলে এখানে বসান — বেতনের সময় নিজে থেকে বাদ যাবে</span></h2>
+      <div class="grid">
+        <div class="field"><label>কর্মচারী</label><select id="adv_emp"><option value="">— বাছুন —</option></select></div>
+        <div class="field"><label>তারিখ</label><input type="date" id="adv_date"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>অগ্রিম টাকা ৳</label><input type="number" id="adv_amount" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="adv_note" placeholder="মন্তব্য"></div>
+      </div>
+      <button class="btn" id="adv_save">অগ্রিম যোগ করুন</button>
+    </div>
+    <div class="card"><h2>অগ্রিমের তালিকা <span class="sub">মাস ও কর্মচারী অনুযায়ী মোট নিচে বেতনে বাদ যাবে</span></h2><div class="list" id="advList"><div class="empty">লোড হচ্ছে…</div></div></div>
+
+    <div class="card">
       <h2>বেতন পরিশোধ<span class="sub">অগ্রিম বাদে হাতে পাবে কত — নিজে থেকে হিসাব হবে</span></h2>
       <div class="grid">
         <div class="field"><label>কর্মচারী</label><select id="sal_emp"><option value="">— বাছুন —</option></select></div>
@@ -555,6 +570,34 @@
       <button class="btn" id="sal_save" style="margin-top:10px">বেতন রেকর্ড করুন</button>
     </div>
     <div class="card"><h2>বেতন রেকর্ড</h2><div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div></div>
+  </section>
+
+  <!-- ============ ATTENDANCE (হাজিরা) ============ -->
+  <section class="panel" id="panel-attend">
+    <div class="card">
+      <h2>হাজিরা সারাংশ <span class="sub">কোন দিন কে এলো</span></h2>
+      <div class="field"><label>তারিখ বাছুন</label><input type="date" id="attSumDate"></div>
+      <div class="list" id="attSummary"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+    <div class="card">
+      <h2>হাজিরা যোগ করুন <span class="sub">কে কয়টায় এলো ও বের হলো</span></h2>
+      <div class="grid">
+        <div class="field"><label>তারিখ</label><input type="date" id="att_date"></div>
+        <div class="field"><label>কর্মচারী</label><select id="att_emp"><option value="">— বাছুন —</option></select></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>আসার সময়</label><input type="time" id="att_in"></div>
+        <div class="field"><label>বের হওয়ার সময়</label><input type="time" id="att_out"></div>
+      </div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="att_note" placeholder="যেমন: দেরি / ছুটি"></div>
+      <button class="btn" id="att_save">হাজিরা যোগ করুন</button>
+      <div class="note-inline">শুধু আসার সময় দিয়ে এখন যোগ করে, পরে বের হওয়ার সময় এডিট করেও দিতে পারেন।</div>
+    </div>
+    <div class="card">
+      <h2>সাম্প্রতিক হাজিরা</h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ৩০টি)</label><input type="date" id="attDate"></div>
+      <div class="list" id="attList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
   </section>
 
   <!-- ============ REPORT ============ -->
@@ -738,6 +781,10 @@
         <div class="field"><label>প্রোডাক্ট</label><select id="z_product"></select></div>
       </div>
       <div class="grid">
+        <div class="field"><label>পরিমাণ (পিস)</label><input type="number" id="z_qty" min="1" step="1" placeholder="1" autocomplete="off"></div>
+        <div class="field"><label>দাম ৳ (অর্ডার মূল্য)</label><input type="number" id="z_price" min="0" step="0.01" placeholder="0" autocomplete="off"></div>
+      </div>
+      <div class="grid">
         <div class="field"><label>কাস্টমারের নাম (যে নেয়নি)</label><input type="text" id="z_fname" placeholder="নাম" autocomplete="off"></div>
         <div class="field"><label>কাস্টমার নম্বর</label><input type="text" id="z_first" placeholder="01XXXXXXXXX" autocomplete="off"></div>
       </div>
@@ -892,7 +939,7 @@ const BIZ={
 const bizOf = x => x.business || 'aqua';
 const bizLabel = b => (BIZ[b]&&BIZ[b].label) || 'Aqua Purify BD';
 let ALL_SALES=[], ALL_RETURNS=[], ALL_EXPENSES=[], ALL_STOCK=[], ALL_CASHIN=[], ALL_ZONE=[];
-let SALES=[], RETURNS=[], EXPENSES=[], STOCK=[], CASHIN=[], ZONE=[], PROFILES=[], DELREQS=[], EDITREQS=[], EMPLOYEES=[], SALARY=[], CCORDERS=[];
+let SALES=[], RETURNS=[], EXPENSES=[], STOCK=[], CASHIN=[], ZONE=[], PROFILES=[], DELREQS=[], EDITREQS=[], EMPLOYEES=[], SALARY=[], CCORDERS=[], ATTEND=[], ADVANCES=[];
 
 function applyBizFilter(){
   SALES   = ALL_SALES.filter(x=>bizOf(x)===CURRENT_BIZ);
@@ -916,7 +963,7 @@ async function loadAll(){
     ALL_SALES=s.data||[]; ALL_RETURNS=r.data||[]; ALL_EXPENSES=e.data||[]; ALL_STOCK=stk.data||[];
     ALL_ZONE = zn.error ? [] : (zn.data||[]);
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==='admin'){
-      const [pr,dr,er,ci,emp,sal,cc]=await Promise.all([
+      const [pr,dr,er,ci,emp,sal,cc,att,adv]=await Promise.all([
         db.from('profiles').select('*').order('created_at',{ascending:true}),
         db.from('delete_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
         db.from('edit_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
@@ -924,10 +971,14 @@ async function loadAll(){
         db.from('hisab_employees').select('*').order('id',{ascending:true}),
         db.from('hisab_salary').select('*').order('created_at',{ascending:false}),
         db.from('cc_orders').select('*').order('confirm_date',{ascending:false}),
+        db.from('hisab_attendance').select('*').order('att_date',{ascending:false}).order('id',{ascending:false}),
+        db.from('hisab_advances').select('*').order('adv_date',{ascending:false}).order('id',{ascending:false}),
       ]);
       PROFILES=pr.data||[]; DELREQS=dr.data||[]; EDITREQS=er.data||[];
       ALL_CASHIN=ci.data||[]; EMPLOYEES=emp.data||[]; SALARY=sal.data||[];
       CCORDERS = cc.error ? [] : (cc.data||[]);
+      ATTEND = att.error ? [] : (att.data||[]);
+      ADVANCES = adv.error ? [] : (adv.data||[]);
     }
     applyBizFilter();
     renderAll();
@@ -1289,6 +1340,95 @@ function renderSalary(){
       <button class="del" data-t="hisab_salary" data-id="${s.id}">মুছুন</button>
     </div></div>`).join('') : '<div class="empty">এখনো কোনো বেতন রেকর্ড নেই।</div>'; }
 }
+
+/* ================= হাজিরা (attendance) ================= */
+function fillEmpSel(id){ const sel=$(id); if(!sel) return; const v=sel.value; sel.innerHTML='<option value="">— বাছুন —</option>'+EMPLOYEES.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); sel.value=v; }
+function renderAttend(){
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  fillEmpSel('att_emp');
+  renderAttSummary();
+  const box=$('attList'); if(!box) return;
+  if(!ATTEND.length){ box.innerHTML='<div class="empty">এখনো কোনো হাজিরা নেই।</div>'; return; }
+  const d=($('attDate')?$('attDate').value:'');
+  const list = d ? ATTEND.filter(a=>a.att_date===d) : ATTEND;
+  const shown = d ? list : list.slice(0,30);
+  let head = d ? `<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — উপস্থিত <b>${list.length}জন</b></div>` : '';
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো হাজিরা নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(a=>`<div class="item"><div>
+      <div class="t">${a.emp_name||''}</div>
+      <div class="m">${niceDate(a.att_date)} · আসা <b>${a.in_time||'—'}</b>${a.out_time?' · বের <b>'+a.out_time+'</b>':''}${a.note?' · '+a.note:''}</div>
+    </div><div style="text-align:right">
+      <button class="del" data-t="hisab_attendance" data-id="${a.id}">মুছুন</button>
+    </div></div>`).join('');
+}
+function renderAttSummary(){
+  const box=$('attSummary'); if(!box) return;
+  if($('attSumDate')&&!$('attSumDate').value) $('attSumDate').value=todayStr();
+  const d=($('attSumDate')?$('attSumDate').value:'')||todayStr();
+  const day=ATTEND.filter(a=>a.att_date===d);
+  if(!day.length){ box.innerHTML=`<div class="empty">${niceDate(d)} — কেউ হাজিরা দেয়নি।</div>`; return; }
+  box.innerHTML=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — উপস্থিত <b>${day.length}জন</b></div>`+day.map(a=>`<div class="item"><div>
+      <div class="t">${a.emp_name||''}</div>
+      <div class="m">আসা <b>${a.in_time||'—'}</b>${a.out_time?' · বের <b>'+a.out_time+'</b>':''}${a.note?' · '+a.note:''}</div>
+    </div></div>`).join('');
+}
+{ const e=$('attSumDate'); if(e) e.addEventListener('change',renderAttSummary); const e2=$('attDate'); if(e2) e2.addEventListener('change',renderAttend); }
+if($('att_save')) $('att_save').onclick=async()=>{
+  const b=$('att_save');
+  const empId=$('att_emp').value, date=$('att_date').value;
+  if(!date||!empId){ toast('তারিখ ও কর্মচারী দিন',true); return; }
+  const emp=EMPLOYEES.find(x=>String(x.id)===String(empId));
+  const inT=$('att_in').value, outT=$('att_out').value, note=$('att_note').value.trim();
+  b.disabled=true;
+  const existing=ATTEND.find(a=>String(a.emp_id)===String(empId)&&a.att_date===date);
+  let error;
+  if(existing){
+    const upd={}; if(inT)upd.in_time=inT; if(outT)upd.out_time=outT; if(note)upd.note=note;
+    ({error}=await db.from('hisab_attendance').update(upd).eq('id',existing.id));
+  } else {
+    ({error}=await db.from('hisab_attendance').insert({ att_date:date, emp_id:Number(empId), emp_name:emp?emp.name:'', in_time:inT||null, out_time:outT||null, note:note||null, created_by:CURRENT_USER?.id||null }));
+  }
+  b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['att_in','att_out','att_note'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  toast(existing?'হাজিরা আপডেট হয়েছে ✓':'হাজিরা যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ================= অগ্রিম (advances) ================= */
+function advTotalFor(empId, ym){ if(!empId||!ym) return 0; return ADVANCES.filter(a=>String(a.emp_id)===String(empId) && (a.adv_date||'').slice(0,7)===ym).reduce((s,a)=>s+n(a.amount),0); }
+function renderAdvances(){
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  fillEmpSel('adv_emp');
+  const box=$('advList'); if(!box) return;
+  box.innerHTML = ADVANCES.length ? ADVANCES.slice(0,40).map(a=>`<div class="item"><div>
+      <div class="t">${a.emp_name||''}</div>
+      <div class="m">${niceDate(a.adv_date)}${a.note?' · '+a.note:''}</div>
+    </div><div style="text-align:right">
+      <div class="amt neg">−${money(n(a.amount))}</div>
+      <button class="del" data-t="hisab_advances" data-id="${a.id}">মুছুন</button>
+    </div></div>`).join('') : '<div class="empty">এখনো কোনো অগ্রিম নেই।</div>';
+}
+if($('adv_save')) $('adv_save').onclick=async()=>{
+  const b=$('adv_save');
+  const empId=$('adv_emp').value, date=$('adv_date').value, amt=n($('adv_amount').value);
+  if(!empId||!date||!amt){ toast('কর্মচারী, তারিখ ও টাকা দিন',true); return; }
+  const emp=EMPLOYEES.find(x=>String(x.id)===String(empId));
+  b.disabled=true;
+  const {error}=await db.from('hisab_advances').insert({ adv_date:date, emp_id:Number(empId), emp_name:emp?emp.name:'', amount:amt, note:$('adv_note').value.trim()||null, created_by:CURRENT_USER?.id||null });
+  b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['adv_amount','adv_note'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  toast('অগ্রিম যোগ হয়েছে ✓'); await loadAll();
+};
+// বেতনে অগ্রিম অটো-বসানো
+function syncSalAdvance(){
+  const empId=$('sal_emp')?$('sal_emp').value:'', ym=$('sal_month')?$('sal_month').value:'';
+  const t=advTotalFor(empId,ym);
+  if($('sal_adv')) $('sal_adv').value = t ? t : '';
+  if(typeof salNet==='function') salNet();
+}
+{ const sm=$('sal_month'); if(sm) sm.addEventListener('change',syncSalAdvance); }
+
 /* ================= ড্যাশবোর্ড ================= */
 let DASH_RANGE='today';
 function dashDates(){
@@ -1465,7 +1605,7 @@ function renderZoneWait(){
   if(!list.length){ box.innerHTML='<div class="empty">ওয়েটিং-এ কোনো পার্সেল নেই।</div>'; return; }
   box.innerHTML=`<div class="infobar" style="margin-bottom:10px">বর্তমানে ওয়েটিং-এ <b>${list.length}টি</b> পার্সেল</div>`+list.map(z=>`<div class="item"><div>
       <div class="t">${z.product||''} <span class="badge ot">ওয়েটিং</span></div>
-      <div class="m">${niceDate(zDateOf(z))} · ${z.first_name||''} ${z.first_number||''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+      <div class="m">${niceDate(zDateOf(z))} · ${z.first_name||''} ${z.first_number||''}${z.qty?' · '+z.qty+' পিস':''}${z.price?' · '+money(z.price):''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
     </div><div style="text-align:right;white-space:nowrap">
       <button class="btn ghost zc-do" data-id="${z.id}" style="width:auto;padding:7px 12px;font-size:13px">জোন চেঞ্জ করুন</button>
       <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
@@ -1482,7 +1622,7 @@ function renderZoneDone(){
   if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো জোন চেঞ্জ নেই।</div>'; return; }
   box.innerHTML=head+shown.map(z=>`<div class="item"><div>
       <div class="t">${z.product||''} <span class="badge oh">জোন চেঞ্জ</span></div>
-      <div class="m">${niceDate(z.change_date||zDateOf(z))} · ${z.first_number||''} → ${z.second_name||''} ${z.second_number||''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+      <div class="m">${niceDate(z.change_date||zDateOf(z))} · ${z.first_number||''} → ${z.second_name||''} ${z.second_number||''}${z.qty?' · '+z.qty+' পিস':''}${z.price?' · '+money(z.price):''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
     </div><div style="text-align:right">
       <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
     </div></div>`).join('');
@@ -1491,13 +1631,14 @@ function renderZoneDone(){
 if($('z_save')) $('z_save').onclick=async()=>{
   const b=$('z_save');
   const rec={ status:'waiting', entry_date:$('z_date').value, product:$('z_product').value,
+    qty: parseInt($('z_qty').value)||null, price: n($('z_price').value)||null,
     first_name:$('z_fname').value.trim()||null, first_number:$('z_first').value.trim(),
     location:$('z_loc').value.trim()||null, parcel_id:$('z_parcel').value.trim()||null,
     business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
   if(!rec.entry_date||!rec.first_number){ toast('তারিখ ও কাস্টমার নম্বর দিন',true); return; }
   b.disabled=true; const {error}=await db.from('zone_changes').insert(rec); b.disabled=false;
   if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
-  ['z_fname','z_first','z_loc','z_parcel'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  ['z_fname','z_first','z_loc','z_parcel','z_qty','z_price'].forEach(id=>{const el=$(id);if(el)el.value='';});
   toast('ওয়েটিং লিস্টে যোগ হয়েছে ✓'); await loadAll();
 };
 /* জোন চেঞ্জ মডাল */
@@ -1523,7 +1664,7 @@ if($('zcConfirm')) $('zcConfirm').onclick=async()=>{
   toast('জোন চেঞ্জ সম্পন্ন ✓'); await loadAll();
 };
 
-function renderAll(){ renderDash(); renderAgent(); renderZone(); renderSummary(); renderProducts(); renderSalesList(); renderReturnsList(); renderExpensesList(); renderStock(); renderStockIn(); renderCash(); renderCashIn(); renderSalary(); renderDaily(); renderMonthly(); renderAdmin(); renderDelReqs(); renderNotif(); renderLog(); }
+function renderAll(){ renderDash(); renderAgent(); renderZone(); renderSummary(); renderProducts(); renderSalesList(); renderReturnsList(); renderExpensesList(); renderStock(); renderStockIn(); renderCash(); renderCashIn(); renderSalary(); renderAdvances(); renderAttend(); renderDaily(); renderMonthly(); renderAdmin(); renderDelReqs(); renderNotif(); renderLog(); }
 
 /* ---------- অ্যাডমিন: অ্যাক্সেস টগল ---------- */
 document.addEventListener('click',async(ev)=>{
@@ -1550,6 +1691,7 @@ document.querySelectorAll('.tab').forEach(t=>{ t.onclick=()=>{
   if(t.dataset.tab==='dash') renderDash();
   if(t.dataset.tab==='agent') renderAgent();
   if(t.dataset.tab==='zone'){ if($('z_date')&&!$('z_date').value) $('z_date').value=todayStr(); renderZone(); }
+  if(t.dataset.tab==='attend'){ if($('att_date')&&!$('att_date').value) $('att_date').value=todayStr(); renderAttend(); }
   sidebarToggle(false);
 };});
 function sidebarToggle(open){ const sb=$('sidebar'), ov=$('sideovl'); if(!sb) return; const show = (open===undefined)? !sb.classList.contains('open') : open; sb.classList.toggle('open',show); if(ov) ov.classList.toggle('show',show); }
@@ -1645,7 +1787,7 @@ $('emp_save').onclick=async()=>{
 };
 function salNet(){ const net=n($('sal_amount').value)+n($('sal_bonus').value)-n($('sal_adv').value); $('sal_net').textContent='হাতে পাবে: '+money(net); return net; }
 ['sal_amount','sal_bonus','sal_adv'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',salNet); });
-$('sal_emp').addEventListener('change',()=>{ const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value); if(e && !$('sal_amount').value){ $('sal_amount').value=e.monthly_salary; salNet(); } });
+$('sal_emp').addEventListener('change',()=>{ const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value); if(e && !$('sal_amount').value){ $('sal_amount').value=e.monthly_salary; } syncSalAdvance(); });
 $('sal_save').onclick=async()=>{
   const b=$('sal_save');
   const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value);
@@ -2453,13 +2595,13 @@ function applyPermissions(){
   const p=CURRENT_PROFILE||{};
   const isAdmin = p.role==='admin';
   const a=bizAccess(CURRENT_BIZ);
-  const can={ dash:isAdmin, sales:a.sales, returns:a.returns, zone:(a.sales||a.returns), expenses:a.expenses, stock:a.stock, cash:isAdmin, salary:isAdmin, report:isAdmin, log:isAdmin, agent:isAdmin, admin:isAdmin };
+  const can={ dash:isAdmin, sales:a.sales, returns:a.returns, zone:(a.sales||a.returns), expenses:a.expenses, stock:a.stock, cash:isAdmin, salary:isAdmin, attend:isAdmin, report:isAdmin, log:isAdmin, agent:isAdmin, admin:isAdmin };
   document.querySelectorAll('.tab').forEach(t=>{ t.style.display = can[t.dataset.tab] ? '' : 'none'; });
   $('summaryBox').style.display = isAdmin ? '' : 'none';
   const ccb=$('ccBtn'); if(ccb) ccb.style.display = isAdmin ? 'inline-flex' : 'none';
   const fab=$('chatFab'); if(fab) fab.style.display = isAdmin ? 'block' : 'none';
   if(!isAdmin){ const cp=$('chatPanel'); if(cp) cp.classList.remove('show'); }
-  const order=['dash','sales','returns','zone','expenses','stock','cash','salary','report','log','agent','admin'];
+  const order=['dash','sales','returns','zone','expenses','stock','cash','salary','attend','report','log','agent','admin'];
   const first=order.find(k=>can[k]);
   document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
@@ -2520,6 +2662,9 @@ $('s_date').value=todayStr(); $('r_rdate').value=todayStr(); $('e_date').value=t
 if($('st_date')) $('st_date').value=todayStr();
 if($('ci_date')) $('ci_date').value=todayStr();
 if($('z_date')) $('z_date').value=todayStr();
+if($('att_date')) $('att_date').value=todayStr();
+if($('adv_date')) $('adv_date').value=todayStr();
+if($('sal_month')) $('sal_month').value=monthStr();
 if($('sal_date')) $('sal_date').value=todayStr();
 if($('sal_month')) $('sal_month').value=monthStr();
 $('rep_day').value=todayStr(); $('rep_month').value=monthStr();
