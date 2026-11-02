@@ -99,6 +99,28 @@
   .subbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
   .subpanel{display:none}
   .subpanel.active{display:block}
+  /* এজেন্ট ড্যাশবোর্ড */
+  .dashhead{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:10px;margin:6px 0 16px}
+  .dashhead h3{font-size:21px;margin:0;color:var(--ink)}
+  .dashhead .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:13px;margin-bottom:16px}
+  .statcard{border-radius:16px;padding:15px 16px;border:1px solid var(--line)}
+  .statcard .ico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:10px}
+  .statcard .num{font-size:27px;font-weight:800;line-height:1;color:var(--ink)}
+  .statcard .cap{font-size:12.5px;color:var(--muted);margin-top:5px}
+  .statcard .delta{font-size:11.5px;font-weight:700;margin-top:5px}
+  .sc-blue{background:linear-gradient(135deg,#eef4ff,#f8fbff)} .sc-blue .ico{background:#dce9ff;color:#2f6fed}
+  .sc-green{background:linear-gradient(135deg,#eafaf0,#f7fefa)} .sc-green .ico{background:#d6f5e3;color:#18a558}
+  .sc-amber{background:linear-gradient(135deg,#fff6e6,#fffef8)} .sc-amber .ico{background:#ffe9bf;color:#c88a00}
+  .sc-rose{background:linear-gradient(135deg,#fdeef3,#fff8fb)} .sc-rose .ico{background:#fcd9e6;color:#d6447a}
+  .chartrow{display:grid;grid-template-columns:1fr;gap:13px;margin-bottom:13px}
+  @media(min-width:820px){.chartrow{grid-template-columns:1.5fr 1fr}}
+  .panelbox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .panelbox h4{margin:0 0 12px;font-size:14.5px;color:var(--ink)}
+  .donut-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:center}
+  .legend{font-size:13px}
+  .legend .li{display:flex;align-items:center;gap:8px;margin:7px 0}
+  .legend .dot{width:11px;height:11px;border-radius:50%;flex-shrink:0}
   .dbar{height:9px;border-radius:5px;background:var(--primary);min-width:3px}
   .dbar-track{background:var(--surface-2);border-radius:5px;overflow:hidden;flex:1}
   main{max-width:920px;margin:0 auto;padding:18px 14px 60px}
@@ -1769,6 +1791,43 @@ function agDayStats(agentId, d){
   const list=CCORDERS.filter(o=>o.confirm_date===d && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ);
   return agStats(list);
 }
+// ডোনাট চার্ট
+function donutChart(parts){
+  const total=parts.reduce((s,p)=>s+p.val,0);
+  if(!total) return '<div class="empty" style="text-align:center">এই মাসে কোনো অর্ডার নেই।</div>';
+  let acc=0; const segs=parts.filter(p=>p.val>0).map(p=>{ const a=acc/total*360, b=(acc+p.val)/total*360; acc+=p.val; return `${p.color} ${a}deg ${b}deg`; });
+  const legend=parts.map(p=>`<div class="li"><span class="dot" style="background:${p.color}"></span>${p.label} — <b>${p.val}</b> (${Math.round(p.val/total*100)}%)</div>`).join('');
+  return `<div class="donut-wrap">
+    <div style="width:132px;height:132px;border-radius:50%;background:conic-gradient(${segs.join(',')});position:relative;flex-shrink:0">
+      <div style="position:absolute;inset:19px;background:var(--surface);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column">
+        <div style="font-size:21px;font-weight:800;color:var(--ink)">${total}</div><div style="font-size:11px;color:var(--muted)">মোট অর্ডার</div>
+      </div>
+    </div><div class="legend">${legend}</div></div>`;
+}
+// লাইন চার্ট (দৈনিক অর্ডার)
+function lineChart(vals, labels){
+  const w=580,h=170,pad=26, nn=vals.length, mx=Math.max(1,...vals);
+  if(!nn) return '<div class="empty">ডেটা নেই।</div>';
+  const X=i=> pad + (nn<=1?(w-2*pad)/2:i*(w-2*pad)/(nn-1));
+  const Y=v=> h-pad - v/mx*(h-2*pad-6);
+  const pts=vals.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+  const area=`${X(0).toFixed(1)},${h-pad} ${pts} ${X(nn-1).toFixed(1)},${h-pad}`;
+  const dots=vals.map((v,i)=>`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="3" fill="var(--primary)"/>`).join('');
+  const xlab=labels.map((l,i)=> (i%Math.ceil(nn/7||1)===0||i===nn-1)?`<text x="${X(i).toFixed(1)}" y="${h-7}" font-size="10" fill="var(--muted)" text-anchor="middle">${l}</text>`:'').join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto">
+    <polygon points="${area}" fill="var(--primary)" opacity="0.08"/>
+    <polyline points="${pts}" fill="none" stroke="var(--primary)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${dots}${xlab}</svg>`;
+}
+function daysInMonth(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function dailyOrderSeries(agentId, ym){
+  const dim=daysInMonth(ym), vals=[], labels=[];
+  for(let d=1; d<=dim; d++){ const ds=ym+'-'+String(d).padStart(2,'0');
+    vals.push(CCORDERS.filter(o=>o.confirm_date===ds && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ).length);
+    labels.push(String(d));
+  }
+  return {vals,labels};
+}
 function renderAgReport(){
   const box=$('ag_reportBox'); if(!box) return;
   fillAgentSel('ag_repAgent', true);
@@ -1802,30 +1861,52 @@ function renderAgReport(){
   const prodMap={};
   monthOrders(agentId,ym).filter(isDelivered).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
   const prodPairs=Object.keys(prodMap).map(k=>({label:k,val:prodMap[k],sub:prodMap[k]+' পিস'})).sort((a,b)=>b.val-a.val).slice(0,6);
+  const ser=dailyOrderSeries(agentId,ym);
+  const dChip=(v)=>`<div class="delta" style="color:${v>=0?'var(--profit)':'var(--loss)'}">${v>=0?'▲':'▼'} গত মাসের চেয়ে ${Math.abs(v)}</div>`;
+  const dConf=cur.conf-prev.conf, dDeliv=cur.deliv-prev.deliv, dPend=cur.pend-prev.pend, dComm=cur.comm-prev.comm;
+  // সাম্প্রতিক অর্ডার (এই মাস)
+  const recent=monthOrders(agentId,ym).slice(0,5);
+  const stBadge=st=>st==='Delivered'?'<span class="badge oh">ডেলিভারড</span>':st==='Cancelled'?'<span class="badge ot">ক্যান্সেল</span>':'<span class="badge" style="background:#fff4e0;color:#9a6a00">পেন্ডিং</span>';
   box.innerHTML=`
-   <div class="infobar" style="margin:14px 0;display:flex;gap:18px;flex-wrap:wrap;align-items:center">
-     <span>📅 <b>আজকের</b> (${niceDate(todayStr())})</span>
-     <span>কনফার্ম <b>${today.conf}</b></span>
-     <span>কনভার্ট <b style="color:var(--profit)">${today.deliv}</b></span>
-     <span>কমিশন <b>${money(today.comm)}</b></span>
+   <div class="dashhead">
+     <div><h3>স্বাগতম, ${agName} 👋</h3><div class="sub">${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
+     <div class="infobar" style="margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
+       📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.deliv}</b> · কমিশন <b>${money(today.comm)}</b>
+     </div>
    </div>
-   <div class="summary" style="margin:0 0 14px">
-     <div class="chip"><div class="lbl">কনফার্ম অর্ডার (${niceMonth(ym)})</div><div class="val">${cur.conf}</div></div>
-     <div class="chip"><div class="lbl">ডেলিভারড (কনভার্ট)</div><div class="val" style="color:var(--profit)">${cur.deliv}</div></div>
-     <div class="chip"><div class="lbl">ক্যান্সেল</div><div class="val" style="color:var(--loss)">${cur.canc}</div></div>
-     <div class="chip"><div class="lbl">পেন্ডিং</div><div class="val">${cur.pend}</div></div>
-     <div class="chip"><div class="lbl">কনভার্সন রেট</div><div class="val">${cur.convRate}%</div></div>
-     <div class="chip"><div class="lbl">কমিশন (${commRate()}৳ × ${cur.pcs} পিস)</div><div class="val">${money(cur.comm)}</div></div>
-     <div class="chip"><div class="lbl">ডেলিভারি বিক্রি</div><div class="val small">${money(cur.rev)}</div></div>
-     <div class="chip"><div class="lbl">হাজিরা বোনাস</div><div class="val small">${bonus.has?(bonus.eligible?money(bonus.amt)+' ✓':'অযোগ্য ('+bonus.late+' দিন লেট)'):'হাজিরা নেই'}</div></div>
+   <div class="statgrid">
+     <div class="statcard sc-blue"><div class="ico">🧾</div><div class="num">${cur.conf}</div><div class="cap">কনফার্ম অর্ডার</div>${dChip(dConf)}</div>
+     <div class="statcard sc-green"><div class="ico">✅</div><div class="num">${cur.deliv}</div><div class="cap">কনভার্ট (ডেলিভারড)</div>${dChip(dDeliv)}</div>
+     <div class="statcard sc-amber"><div class="ico">⏳</div><div class="num">${cur.pend}</div><div class="cap">পেন্ডিং</div>${dChip(dPend)}</div>
+     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(cur.comm)}</div><div class="cap">কমিশন (${commRate()}৳×${cur.pcs} পিস)</div>${dChip(dComm)}</div>
    </div>
-   <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0 0 12px;padding:16px">
-     <div class="m" style="font-weight:600;color:var(--ink);margin-bottom:10px">এই মাস vs গত মাস — ডেলিভারি বিক্রি <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></div>
-     ${cmpBars}
+   <div class="chartrow">
+     <div class="panelbox"><h4>অর্ডার ওভারভিউ <span style="font-weight:500;color:var(--muted);font-size:12px">· ${niceMonth(ym)} দৈনিক কনফার্ম</span></h4>${lineChart(ser.vals,ser.labels)}</div>
+     <div class="panelbox"><h4>স্ট্যাটাস অনুযায়ী</h4>${donutChart([
+        {label:'ডেলিভারড',val:cur.deliv,color:'#18a558'},
+        {label:'পেন্ডিং',val:cur.pend,color:'#e0a500'},
+        {label:'ক্যান্সেল',val:cur.canc,color:'#d6447a'}
+      ])}</div>
    </div>
-   <div class="card" style="box-shadow:none;border:1px solid var(--line);margin:0;padding:16px">
-     <div class="m" style="font-weight:600;color:var(--ink);margin-bottom:6px">🏆 ${niceMonth(ym)} — সবচেয়ে বেশি বিক্রি হওয়া প্রোডাক্ট</div>
-     ${barList(prodPairs)}
+   <div class="chartrow">
+     <div class="panelbox">
+       <h4>🏆 সবচেয়ে বেশি বিক্রি হওয়া প্রোডাক্ট</h4>${barList(prodPairs)}
+     </div>
+     <div class="panelbox">
+       <h4>এই মাস vs গত মাস — বিক্রি <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></h4>
+       ${cmpBars}
+       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px">
+         <span>কনভার্সন রেট <b>${cur.convRate}%</b></span>
+         <span>হাজিরা বোনাস <b>${bonus.has?(bonus.eligible?money(bonus.amt)+' ✓':'অযোগ্য'):'—'}</b></span>
+       </div>
+     </div>
+   </div>
+   <div class="panelbox">
+     <h4>সাম্প্রতিক অর্ডার</h4>
+     ${recent.length?recent.map(o=>`<div class="item"><div>
+         <div class="t">${o.customer_number||''} ${stBadge(o.status||'Pending')}</div>
+         <div class="m">${niceDate(o.confirm_date)} · ${itemsOf(o.id).map(it=>it.product+' ('+it.qty+')').join(', ')||'—'}</div>
+       </div><div style="text-align:right"><div class="amt">${money(orderTotal(o))}</div></div></div>`).join(''):'<div class="empty">এই মাসে কোনো অর্ডার নেই।</div>'}
    </div>`;
 }
 
