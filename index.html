@@ -1,0 +1,2533 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>AP Group হিসাব</title>
+<!-- PWA: হোম স্ক্রিনে অ্যাপ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d7377">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="হিসাব">
+<link rel="apple-touch-icon" href="hisab-apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef2f3; --surface:#ffffff; --surface-2:#f6f9f9;
+    --ink:#0c2b2f; --muted:#5b7075; --line:#dde6e7;
+    --primary:#0d7377; --primary-d:#0a5c5f;
+    --profit:#137a3e; --loss:#c02626;
+    --shadow:0 1px 2px rgba(12,43,47,.06), 0 6px 20px rgba(12,43,47,.05);
+  }
+  body[data-biz="redbox"]{
+    --bg:#f6eef0; --surface-2:#fbf4f5; --line:#ecdcdf;
+    --primary:#c8546b; --primary-d:#a63c53;   /* নরম rose/crimson */
+  }
+  body[data-biz="redbox"] .infobar{ background:#fbeaee; border-color:#f2cdd5; color:#a63c53; }
+  body[data-biz="redbox"] .badge.oh{ background:#fbeaee; color:#a63c53; }
+  body[data-biz="redbox"] .pill.on{ background:#fbeaee; color:#a63c53; border-color:#f2cdd5; }
+  body[data-biz="yeaqqen"]{
+    --bg:#f5f1ea; --surface-2:#faf6ef; --line:#e8dfcf;
+    --primary:#4a3b2e; --primary-d:#352a20;   /* YAQQEN চকলেট */
+  }
+  body[data-biz="yeaqqen"] header .brand .dot{ background:#e8a33d; box-shadow:0 0 0 4px rgba(232,163,61,.28); }
+  body[data-biz="yeaqqen"] .infobar{ background:#f8edd6; border-color:#eed9ad; color:#8a5a1f; }
+  body[data-biz="yeaqqen"] .badge.oh{ background:#f8edd6; color:#8a5a1f; }
+  body[data-biz="yeaqqen"] .pill.on{ background:#f8edd6; color:#8a5a1f; border-color:#eed9ad; }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{font-family:"Hind Siliguri",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:15.5px; line-height:1.5; -webkit-font-smoothing:antialiased;}
+  .num{font-variant-numeric:tabular-nums;}
+  a{color:var(--primary)}
+  header{background:linear-gradient(180deg,var(--primary),var(--primary-d)); color:#eafcfb; padding:16px 18px 20px;}
+  .wrap{max-width:920px;margin:0 auto;padding:0 14px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;letter-spacing:.2px}
+  .brand .dot{width:11px;height:11px;border-radius:50%;background:#7fe3df;box-shadow:0 0 0 4px rgba(127,227,223,.25)}
+  .summary{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+  .chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 14px}
+  .chip .lbl{font-size:12.5px;color:#c9f0ee;font-weight:500}
+  .chip .val{font-size:22px;font-weight:700;margin-top:2px}
+  .chip .val.small{font-size:16px}
+  nav.tabs{position:sticky;top:0;z-index:20;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:var(--shadow)}
+  .tabs-inner{max-width:920px;margin:0 auto;display:flex;overflow-x:auto}
+  .tab{flex:1;min-width:88px;text-align:center;padding:13px 8px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;font-size:14.5px}
+  .tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+  /* ===== Sidebar layout ===== */
+  .shell{display:flex;min-height:100vh}
+  .sidebar{width:232px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;position:fixed;top:0;bottom:0;left:0;z-index:40;transition:transform .22s ease}
+  .side-brand{padding:18px 18px 14px;font-weight:700;font-size:17.5px;color:var(--ink);display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+  .side-brand .dot{width:11px;height:11px;border-radius:50%;background:var(--primary);box-shadow:0 0 0 4px rgba(13,115,119,.15);flex-shrink:0}
+  .side-nav{flex:1;overflow-y:auto;padding:10px}
+  .side-nav .tab{display:flex;align-items:center;gap:10px;flex:none;min-width:0;text-align:left;width:100%;padding:11px 14px;margin:2px 0;border-radius:10px;border-bottom:none;white-space:nowrap;color:var(--muted);font-size:14.5px}
+  .side-nav .tab:hover{background:var(--surface-2)}
+  .side-nav .tab.active{color:#fff;background:var(--primary);border-bottom:none}
+  .side-foot{padding:12px;border-top:1px solid var(--line)}
+  .main{flex:1;min-width:0;margin-left:232px}
+  .topbar{position:sticky;top:0;z-index:30;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:12px 18px;box-shadow:var(--shadow)}
+  .topbar .tb-title{font-weight:700;font-size:17px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .topbar .tb-actions{display:flex;align-items:center;gap:9px}
+  .ic-btn{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-size:16px;padding:6px 10px;border-radius:9px;cursor:pointer;position:relative;line-height:1}
+  .ic-btn:hover{background:var(--surface)}
+  .hamb{display:none;background:var(--surface-2);border:1px solid var(--line);color:var(--ink);font-size:18px;border-radius:9px;padding:5px 11px;cursor:pointer}
+  .content{max-width:1024px;margin:0 auto;padding:18px 18px 70px}
+  .content main{max-width:none;margin:0;padding:0}
+  .sideovl{display:none;position:fixed;inset:0;background:rgba(12,43,47,.4);z-index:35}
+  .sideovl.show{display:block}
+  @media(max-width:860px){
+    .sidebar{transform:translateX(-100%)}
+    .sidebar.open{transform:none;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+    .main{margin-left:0}
+    .hamb{display:inline-block}
+    .topbar .tb-actions #whoami{display:none}
+  }
+  /* light summary + biz buttons inside content */
+  .summary{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-top:0;margin-bottom:14px}
+  .chip{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+  .chip .lbl{color:var(--muted)}
+  .chip .val{color:var(--ink)}
+  #bizSwitch .bizbtn{background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+  #bizSwitch .bizbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .rbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer}
+  .rbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .dbar{height:9px;border-radius:5px;background:var(--primary);min-width:3px}
+  .dbar-track{background:var(--surface-2);border-radius:5px;overflow:hidden;flex:1}
+  main{max-width:920px;margin:0 auto;padding:18px 14px 60px}
+  .panel{display:none;animation:fade .18s ease}
+  .panel.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+  .card h2{margin:0 0 14px;font-size:17px;font-weight:700}
+  .card h2 .sub{display:block;font-weight:500;font-size:12.5px;color:var(--muted);margin-top:2px}
+  label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin:0 0 5px}
+  input,select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:15px;color:var(--ink);background:var(--surface-2)}
+  input:focus,select:focus{outline:none;border-color:var(--primary);background:#fff;box-shadow:0 0 0 3px rgba(13,115,119,.12)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .field{margin-bottom:12px}
+  .row-check{display:flex;align-items:center;gap:9px;background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:12px}
+  .row-check input{width:auto}
+  .row-check label{margin:0;color:var(--ink);font-weight:600}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:12px 18px;font-family:inherit;font-size:15.5px;font-weight:600;cursor:pointer;width:100%}
+  .btn:hover{background:var(--primary-d)}
+  .btn:disabled{opacity:.6;cursor:default}
+  .btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+  .helper{background:var(--surface-2);border:1px dashed var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+  .helper .hd{font-size:12.5px;font-weight:600;color:var(--muted);margin-bottom:8px}
+  .infobar{background:#e7f4f3;border:1px solid #bfe3e0;border-radius:10px;padding:10px 12px;font-size:13px;color:#0a5c5f;margin-bottom:14px}
+  .infobar b{font-weight:700}
+  .list{margin-top:6px}
+  .list .empty{color:var(--muted);font-size:14px;padding:10px 2px}
+  .item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-top:1px solid var(--line)}
+  .item:first-child{border-top:none}
+  .item .t{font-weight:600;font-size:14.5px}
+  .item .m{color:var(--muted);font-size:12.5px;margin-top:1px}
+  .item .amt{font-weight:700;text-align:right;white-space:nowrap}
+  .badge{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:20px;margin-left:6px;vertical-align:middle}
+  .badge.oh{background:#e7f4f3;color:#0a5c5f}
+  .badge.ot{background:#fdecec;color:var(--loss)}
+  .del{background:none;border:none;color:var(--loss);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px}
+  .edt{background:none;border:none;color:var(--primary);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px;margin-right:2px}
+  .edt:hover{background:#e7f4f3}
+  .del:hover{background:#fde8e8}
+  .viw{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px;margin-right:2px}
+  .viw:hover{background:var(--surface-2);color:var(--ink)}
+  .edt{background:none;border:none;color:var(--primary);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px;margin-right:2px}
+  .edt:hover{background:var(--surface-2)}
+  .arow{padding:13px 0;border-top:1px solid var(--line)}
+  .arow:first-child{border-top:none}
+  .arow .who{font-weight:600;font-size:14.5px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .arow .who .adm{font-size:11px;font-weight:700;color:#0a5c5f;background:#e7f4f3;padding:1px 8px;border-radius:20px}
+  .perm{display:flex;gap:8px;flex-wrap:wrap}
+  .pill{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:20px;border:1px solid var(--line);cursor:pointer;user-select:none;background:#fff;color:var(--muted)}
+  .pill.on{background:#e7f4f3;color:#0a5c5f;border-color:#bfe3e0}
+  .pill.adm{border-style:dashed}
+  .modal-bg{position:fixed;inset:0;z-index:90;background:rgba(12,43,47,.55);display:none;align-items:center;justify-content:center;padding:16px}
+  .modal-bg.show{display:flex}
+  .modal{background:var(--surface);border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.35);width:100%;max-width:460px;max-height:88vh;overflow-y:auto;padding:20px}
+  .modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .modal-head h3{margin:0;font-size:18px;font-weight:700}
+  .modal-x{background:none;border:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+  .bizbtn{flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#eafcfb;font-family:inherit;font-size:14.5px;font-weight:600;padding:10px;border-radius:10px;cursor:pointer}
+  .bizbtn.active{background:#fff;color:var(--primary-d);border-color:#fff}
+  /* floating chat */
+  #chatFab{position:fixed;right:18px;bottom:18px;z-index:80;width:56px;height:56px;border-radius:50%;background:var(--primary);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 8px 24px rgba(12,43,47,.3);display:none}
+  #chatPanel{position:fixed;right:18px;bottom:84px;z-index:81;width:340px;max-width:calc(100vw - 36px);height:480px;max-height:calc(100vh - 120px);background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 60px rgba(12,43,47,.3);display:none;flex-direction:column;overflow:hidden}
+  #chatPanel.show{display:flex}
+  .chat-head{background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;padding:13px 16px;display:flex;justify-content:space-between;align-items:center}
+  .chat-head b{font-size:15px}
+  .chat-head .cx{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+  .chat-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:var(--surface-2)}
+  .msg{max-width:85%;padding:9px 12px;border-radius:12px;font-size:13.5px;line-height:1.65;white-space:pre-wrap}
+  .msg.u{align-self:flex-end;background:var(--primary);color:#fff;border-bottom-right-radius:4px}
+  .msg.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-left-radius:4px}
+  .chat-foot{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line);background:var(--surface)}
+  .chat-foot input{flex:1}
+  .chat-foot button{flex:none;width:44px;background:var(--primary);color:#fff;border:none;border-radius:9px;font-size:18px;cursor:pointer}
+  .report-line{display:flex;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line);font-size:15px}
+  .report-line:first-child{border-top:none}
+  .report-line .k{color:var(--muted)}
+  .report-line .v{font-weight:600}
+  .report-line.total{border-top:2px solid var(--ink);margin-top:4px;padding-top:14px;font-size:18px}
+  .report-line.total .k{color:var(--ink);font-weight:700}
+  .report-note{font-size:12.5px;color:var(--muted);margin-top:8px}
+  .pos{color:var(--profit)} .neg{color:var(--loss)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-weight:600;font-size:14.5px;box-shadow:0 8px 30px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.25s;z-index:60;max-width:90%;text-align:center}
+  .toast.show{opacity:1;transform:translate(-50%,-4px)}
+  .toast.err{background:var(--loss)}
+  .note-inline{font-size:12.5px;color:var(--muted);margin-top:6px}
+  @media(max-width:560px){.grid-3{grid-template-columns:1fr 1fr}.chip .val{font-size:19px}}
+</style>
+</head>
+<body>
+
+<!-- ===== লগইন পেজ ===== -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:100;background:linear-gradient(160deg,#0d7377,#0a5c5f);display:none;align-items:center;justify-content:center;padding:20px">
+  <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:26px 22px;width:100%;max-width:360px">
+    <div style="display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;color:#0c2b2f;margin-bottom:4px">
+      <span style="width:11px;height:11px;border-radius:50%;background:#0d7377;display:inline-block"></span> AP Group হিসাব
+    </div>
+    <div style="color:#5b7075;font-size:13.5px;margin-bottom:18px">লগইন করে ভেতরে যান</div>
+    <div class="field"><label>ইমেইল</label><input type="email" id="li_email" placeholder="you@email.com" autocomplete="username"></div>
+    <div class="field"><label>পাসওয়ার্ড</label><input type="password" id="li_pass" placeholder="পাসওয়ার্ড" autocomplete="current-password"></div>
+    <button class="btn" id="li_btn" style="margin-top:4px">লগইন</button>
+    <div id="li_msg" style="color:var(--loss);font-size:13px;margin-top:10px;min-height:18px;text-align:center"></div>
+  </div>
+</div>
+
+<!-- ===== মূল app (লগইন ছাড়া লুকানো) ===== -->
+<div id="appRoot" style="display:none">
+
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="side-brand"><span class="dot"></span> AP Group হিসাব</div>
+    <nav class="side-nav">
+      <div class="tab" data-tab="dash">🏠 ড্যাশবোর্ড</div>
+      <div class="tab active" data-tab="sales">🛒 বিক্রি</div>
+      <div class="tab" data-tab="returns">↩️ রিটার্ন</div>
+      <div class="tab" data-tab="zone">🔄 জোন চেঞ্জ</div>
+      <div class="tab" data-tab="expenses">💸 খরচ</div>
+      <div class="tab" data-tab="stock">📦 স্টক</div>
+      <div class="tab" data-tab="cash">🏦 ক্যাশ</div>
+      <div class="tab" data-tab="salary">👥 বেতন</div>
+      <div class="tab" data-tab="report">📊 রিপোর্ট</div>
+      <div class="tab" data-tab="log">🧾 লগ</div>
+      <div class="tab" data-tab="agent">👤 এজেন্ট</div>
+      <div class="tab" data-tab="admin">⚙️ অ্যাডমিন</div>
+    </nav>
+    <div class="side-foot"><button id="logoutBtn" class="btn ghost" style="width:100%">লগআউট</button></div>
+  </aside>
+  <div class="sideovl" id="sideovl"></div>
+  <div class="main">
+    <div class="topbar">
+      <button class="hamb" id="hamb">☰</button>
+      <div class="tb-title" id="tbTitle">ড্যাশবোর্ড</div>
+      <div class="tb-actions">
+        <span id="whoami"></span>
+        <button id="openGuide" class="ic-btn" title="হিসাব কীভাবে হয়">📘</button>
+        <button id="openInvoice" class="ic-btn" title="Invoice বানান">🧾</button>
+        <button id="ccBtn" class="ic-btn" title="কল সেন্টার অ্যাপ" style="display:none">📞</button>
+        <button id="notifBtn" class="ic-btn" title="মোছার অনুরোধ" style="display:none">🔔<span id="notifBadge" style="position:absolute;top:-7px;right:-7px;background:#c02626;color:#fff;font-size:10px;font-weight:700;min-width:17px;height:17px;border-radius:10px;display:none;align-items:center;justify-content:center;padding:0 4px">0</span></button>
+      </div>
+    </div>
+    <div class="content">
+    <div id="bizSwitch" style="display:flex;gap:8px;margin-bottom:14px">
+      <button class="bizbtn" data-biz="aqua">Aqua Purify BD</button>
+      <button class="bizbtn" data-biz="redbox">Redbox</button>
+      <button class="bizbtn" data-biz="yeaqqen">YAQQEN</button>
+    </div>
+    <div class="summary" id="summaryBox">
+      <div class="chip"><div class="lbl">আজকের বিক্রি</div><div class="val num" id="sumSale">—</div></div>
+      <div class="chip"><div class="lbl">আজকের খরচ</div><div class="val num" id="sumCost">—</div></div>
+      <div class="chip"><div class="lbl">আজকের নিট লাভ</div><div class="val num" id="sumToday">—</div></div>
+      <div class="chip"><div class="lbl" id="monthLbl">এই মাসের নিট লাভ</div><div class="val num" id="sumMonth">—</div></div>
+      <div class="chip"><div class="lbl">আজকের অর্ডার</div><div class="val num" id="sumOrdToday">—</div></div>
+      <div class="chip"><div class="lbl" id="monthOrdLbl">এই মাসের অর্ডার</div><div class="val num" id="sumOrdMonth">—</div></div>
+    </div>
+      <main>
+
+  <div class="modal-bg" id="guideModal">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-head">
+        <h3>📘 হিসাব কীভাবে হয়?</h3>
+        <button class="modal-x" id="closeGuide">&times;</button>
+      </div>
+    <div style="margin-top:6px;font-size:14px;line-height:1.7">
+      <div style="font-weight:700;margin-bottom:4px">🛒 বিক্রি সেকশন কীভাবে কাজ করে</div>
+      <p style="margin:0 0 6px">দিন শেষে যে প্রোডাক্ট যত পিস গেছে, সেটা এখানে বসান। প্রতিটা ঘরের মানে:</p>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+        • <b>তারিখ</b> — কোন দিনের বিক্রি<br>
+        • <b>প্রোডাক্ট</b> — ড্রপডাউন থেকে বাছুন (YAQQEN হলে সাথে <b>কালার</b>ও বাছুন)<br>
+        • <b>পিস (qty)</b> — কয়টা পিস/ইউনিট গেছে (জিনিসের সংখ্যা)<br>
+        • <b>অর্ডার সংখ্যা</b> — কয়জন কাস্টমার / কয়টা পার্সেল। খালি রাখলে পিসের সমান ধরে<br>
+        • <b>প্রতি পিস বিক্রয় মূল্য</b> — একটা পিস কত টাকায় বিক্রি<br>
+        • <b>প্রোডাক্ট কস্ট</b> — একটা পিসের কেনা/উৎপাদন খরচ<br>
+        • <b>প্যাকেজিং</b> — প্রতি পিসে প্যাকেজিং খরচ<br>
+        • <b>ডেলিভারি (প্রতি অর্ডার)</b> — প্রতি পার্সেলে কুরিয়ার খরচ<br>
+        • <b>নোট</b> — কাস্টমারের নাম/অর্ডার নম্বর (ঐচ্ছিক)
+      </div>
+      <p style="margin:6px 0 6px"><b>পিস আর অর্ডার আলাদা কেন:</b> ১ জন কাস্টমার ৩টা শাল নিলে → পিস = ৩, অর্ডার = ১। ৩ জন আলাদা ১টা করে নিলে → পিস = ৩, অর্ডার = ৩।</p>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+        <b>পিস</b> দিয়ে হিসাব হয় → বিক্রির টাকা, প্রোডাক্ট কস্ট, স্টক কমা<br>
+        <b>অর্ডার সংখ্যা</b> দিয়ে হিসাব হয় → ডেলিভারি, অপারেশন ও Ad কস্ট (এগুলো প্রতি পার্সেলে ধরা হয়)
+      </div>
+      <p style="margin:6px 0 14px;color:var(--muted);font-size:13px">তাই একজন ২টা একসাথে নিলে পিস ২ কিন্তু অর্ডার ১ দিলে ডেলিভারি খরচ একবারই ধরা হয় — হিসাব নিখুঁত থাকে। অপারেশন ও Ad খরচ এখানে বসাতে হয় না, ওটা "খরচ" ট্যাব থেকে নিজে থেকে হিসাব হয়।</p>
+
+      <div style="font-weight:700;margin-bottom:4px">✅ নিট লাভ কীভাবে বের হয়</div>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:14px">
+        নিট লাভ = মোট বিক্রি − সরাসরি খরচ (পণ্য+প্যাকেজিং+ডেলিভারি) − অপারেশন কস্ট − Ad কস্ট − রিটার্ন লস − এককালীন বড় খরচ
+      </div>
+
+      <div style="font-weight:700;margin-bottom:4px">⚙️ অপারেশন ও Ad কস্ট (auto)</div>
+      <p style="margin:0 0 6px">এই দুটো প্রতি পিসে হাতে বসাতে হয় না। "খরচ" ট্যাবে বসানো টাকা app নিজে ভাগ করে:</p>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+        প্রতি পার্সেলে অপারেশন = ঐ মাসের মোট overhead ÷ ঐ মাসের মোট পার্সেল<br>
+        প্রতি পার্সেলে Ad = ঐ মাসের মোট Ad ÷ ঐ মাসের মোট পার্সেল
+      </div>
+      <p style="margin:0 0 14px;color:var(--muted);font-size:13px">তাই মাসের শুরুতে প্রতি পার্সেলে খরচ বেশি দেখাবে, পার্সেল বাড়লে কমবে — মাস শেষে ১০০% সঠিক।</p>
+
+      <div style="font-weight:700;margin-bottom:4px">↩️ রিটার্ন কীভাবে হিসাব হয়</div>
+      <p style="margin:0 0 6px">রিটার্ন সবসময় <b>মূল বিক্রির তারিখ</b> থেকে বাদ যায় (রিটার্নের তারিখ থেকে নয়)। তাই মাসের হিসাব সবসময় মেলে।</p>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+        ড্যামেজ <b>না</b> হলে — লস = হারানো বিক্রি − ফেরত পাওয়া পণ্যের দাম<br>
+        <span style="color:var(--muted);font-size:13px">(পণ্য আবার স্টকে যায়, তাই তার দাম ফেরত ধরা হয়। ফলে আসল লস দাঁড়ায় ঐ পার্সেলের প্যাকেজিং+ডেলিভারি+অপারেশন+Ad)</span><br><br>
+        ড্যামেজ হলে — উপরের সাথে <b>পণ্যের দামও</b> লস (আবার বিক্রি করা যায় না)
+      </div>
+      <p style="margin:6px 0 0;color:var(--muted);font-size:13px">রিটার্ন এলে "সাম্প্রতিক বিক্রি"র পিস সংখ্যা কমে না — বিক্রি ও রিটার্ন আলাদা রেকর্ড থাকে, কিন্তু নিট লাভে দুটোই ধরা হয়।</p>
+
+      <div style="font-weight:700;margin:14px 0 4px">🔎 রিটার্ন পণ্যের দাম app কীভাবে জানে</div>
+      <p style="margin:0 0 6px">রিটার্ন বসানোর সময় আপনি শুধু দেন — প্রোডাক্ট, মূল বিক্রির তারিখ, ও পিস। দাম বসাতে হয় না। app নিজে বিক্রির রেকর্ডে ফিরে গিয়ে দেখে <b>ঐ প্রোডাক্ট ঐ তারিখে কত দামে বিক্রি হয়েছিল</b>, আর সেখান থেকেই বিক্রয় মূল্য ও প্রোডাক্ট কস্ট নেয়।</p>
+      <div style="background:var(--surface-2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:6px">
+        তাই দুটো জিনিস অবশ্যই ঠিক দিতে হবে:<br>
+        ১. <b>প্রোডাক্ট</b> — ড্রপ-ডাউন থেকে বাছুন (বানান নিজে থেকেই মিলবে)<br>
+        ২. <b>মূল বিক্রির তারিখ</b> — কুরিয়ার স্লিপের বুকিং তারিখ দেখে দিন
+      </div>
+      <p style="margin:6px 0 0;color:var(--muted);font-size:13px">একই দিনে একই প্রোডাক্ট একাধিকবার বসানো থাকলে app গড় দাম ধরে। আর ঐ তারিখে বিক্রি খুঁজে না পেলে সেভ করতে দেবে না — এটা ভুল হিসাব থেকে বাঁচায়।</p>
+    </div>
+    </div>
+  </div>
+
+  <!-- ============ SALES ============ -->
+  <!-- ============ DASHBOARD ============ -->
+  <section class="panel" id="panel-dash">
+    <div class="card">
+      <h2>ড্যাশবোর্ড <span class="sub">সব হিসাব একনজরে</span></h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px">
+        <button class="rbtn active" data-r="today">আজ</button>
+        <button class="rbtn" data-r="month">এই মাস</button>
+        <button class="rbtn" data-r="custom">কাস্টম</button>
+        <div id="dashCustom" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
+          <input type="date" id="dash_from" style="max-width:160px">
+          <span style="color:var(--muted)">থেকে</span>
+          <input type="date" id="dash_to" style="max-width:160px">
+        </div>
+      </div>
+      <div id="dashRangeLbl" style="margin-top:10px;font-size:13px;color:var(--muted)"></div>
+    </div>
+    <div id="dashCards"></div>
+    <div id="dashBalance"></div>
+    <div class="card"><h2>বিক্রি ও লাভের ট্রেন্ড <span class="sub">দৈনিক</span></h2><div id="dashChart"><div class="empty">লোড হচ্ছে…</div></div></div>
+    <div class="grid">
+      <div class="card"><h2>খরচের খাত</h2><div id="dashExpBreak"></div></div>
+      <div class="card"><h2>প্রোডাক্ট অনুযায়ী বিক্রি</h2><div id="dashProdBreak"></div></div>
+    </div>
+  </section>
+
+  <section class="panel active" id="panel-sales">
+    <div class="card">
+      <h2>দিন শেষে বিক্রি যোগ করুন
+        <span class="sub">যে প্রোডাক্ট যত পিস আজ গেল, তার প্রতি-পিস হিসাব দিন</span>
+      </h2>
+      <div class="infobar">অপারেশন কস্ট ও Ad খরচ এখানে বসাতে হবে না — দুটোই "খরচ" ট্যাব থেকে <b>নিজে থেকে</b> হিসাব হয়।</div>
+
+      <div class="grid">
+        <div class="field"><label>তারিখ</label><input type="date" id="s_date"></div>
+        <div class="field"><label>প্রোডাক্ট</label><select id="s_product">
+          <option value="">— প্রোডাক্ট বাছুন —</option>
+          <option value="ট্যাংক ক্লিনার কম্ব">ট্যাংক ক্লিনার কম্ব</option>
+          <option value="ট্যাংক এবং পাইপ ক্লিনার">ট্যাংক এবং পাইপ ক্লিনার</option>
+          <option value="শুধু ট্যাংক ক্লিনার">শুধু ট্যাংক ক্লিনার</option>
+          <option value="শুধু পাইপ ক্লিনার">শুধু পাইপ ক্লিনার</option>
+        </select></div>
+      </div>
+      <div class="grid" id="s_colorWrap" style="display:none">
+        <div class="field"><label>কালার</label><select id="s_color"></select></div>
+        <div class="field" id="s_colorMF" style="display:none"><label>কালার (টাইপ করুন)</label><input type="text" id="s_colorM" placeholder="যেমন: মেরুন"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>পিস (qty)</label><input type="number" id="s_qty" min="1" step="1" placeholder="0"></div>
+        <div class="field"><label>অর্ডার সংখ্যা (কতজন)</label><input type="number" id="s_orders" min="0" step="1" placeholder="খালি = পিসের সমান"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>প্রতি পিস বিক্রয় মূল্য ৳</label><input type="number" id="s_price" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>প্রোডাক্ট কস্ট ৳</label><input type="number" id="s_pc" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>প্যাকেজিং ৳</label><input type="number" id="s_pk" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>ডেলিভারি ৳ (প্রতি অর্ডার)</label><input type="number" id="s_dl" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="s_note" placeholder="যেমন: কাস্টমারের নাম / অর্ডার নম্বর / মন্তব্য"></div>
+
+      <button class="btn" id="s_save">বিক্রি যোগ করুন</button>
+      <button class="btn ghost" id="openCombo" style="margin-top:10px">🧩 কম্বো অর্ডার (একাধিক প্রোডাক্ট)</button>
+      <div class="note-inline">টিপ: আগে বসানো প্রোডাক্টের নাম বাছলে খরচগুলো নিজে থেকে বসে যাবে — দরকার হলে বদলে নিন। Ad খরচ এখন "খরচ" ট্যাবে বসবে।</div>
+    </div>
+
+    <details class="card">
+      <summary style="cursor:pointer;font-weight:700;font-size:17px;list-style:none;display:flex;justify-content:space-between;align-items:center">
+        <span>বিক্রি তালিকা</span>
+        <span style="color:var(--muted);font-weight:500;font-size:13px">খুলুন / বন্ধ করুন</span>
+      </summary>
+      <div style="margin-top:14px">
+        <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ১৫টি)</label><input type="date" id="salesDate"></div>
+        <div class="list" id="salesList"><div class="empty">লোড হচ্ছে…</div></div>
+      </div>
+    </details>
+  </section>
+
+  <!-- ============ RETURNS ============ -->
+  <section class="panel" id="panel-returns">
+    <div class="card">
+      <h2>রিটার্ন যোগ করুন
+        <span class="sub">কোন তারিখের অর্ডার ফেরত এলো সেটা ঠিকমতো দিন — মূল্য app নিজে বের করে নেবে</span>
+      </h2>
+      <div class="grid">
+        <div class="field"><label>রিটার্নের তারিখ (আজ)</label><input type="date" id="r_rdate"></div>
+        <div class="field"><label>মূল বিক্রির তারিখ</label><input type="date" id="r_odate"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>প্রোডাক্ট</label><select id="r_product">
+          <option value="">— প্রোডাক্ট বাছুন —</option>
+          <option value="ট্যাংক ক্লিনার কম্ব">ট্যাংক ক্লিনার কম্ব</option>
+          <option value="ট্যাংক এবং পাইপ ক্লিনার">ট্যাংক এবং পাইপ ক্লিনার</option>
+          <option value="শুধু ট্যাংক ক্লিনার">শুধু ট্যাংক ক্লিনার</option>
+          <option value="শুধু পাইপ ক্লিনার">শুধু পাইপ ক্লিনার</option>
+        </select></div>
+        <div class="field"><label>পিস (qty)</label><input type="number" id="r_qty" min="1" step="1" placeholder="0"></div>
+      </div>
+      <div class="grid" id="r_colorWrap" style="display:none">
+        <div class="field"><label>কালার</label><select id="r_color"></select></div>
+        <div class="field" id="r_colorMF" style="display:none"><label>কালার (টাইপ করুন)</label><input type="text" id="r_colorM" placeholder="যেমন: মেরুন"></div>
+      </div>
+      <div class="row-check"><input type="checkbox" id="r_damaged"><label for="r_damaged">প্রোডাক্ট ড্যামেজ হয়েছে (আবার বিক্রি করা যাবে না)</label></div>
+      <button class="btn" id="r_save">রিটার্ন যোগ করুন</button>
+      <div class="note-inline">ড্যামেজ না হলে প্রোডাক্ট আবার স্টকে যায় — তাই তার দাম লসে ধরা হয় না।</div>
+    </div>
+    <div class="card"><h2>সাম্প্রতিক রিটার্ন</h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ১৫টি)</label><input type="date" id="returnsDate"></div>
+      <div class="list" id="returnsList"><div class="empty">লোড হচ্ছে…</div></div></div>
+  </section>
+
+  <!-- ============ EXPENSES ============ -->
+  <section class="panel" id="panel-expenses">
+    <div class="card">
+      <h2>খরচ যোগ করুন
+        <span class="sub">Ad এখানে বসাবেন না — Ad তো CPA দিয়ে বিক্রিতে ধরা হয়ে গেছে</span>
+      </h2>
+      <div class="infobar">
+        <b>মাসিক overhead</b> (Salary, Rent, বিদ্যুৎ, নেট) → মাসের পার্সেলে ভাগ হয়ে অপারেশন কস্ট হবে।<br>
+        <b>Ad খরচ</b> (ডলার কস্ট) → মাসের পার্সেলে ভাগ হয়ে Ad কস্ট হবে।<br>
+        <b>এককালীন বড় খরচ</b> (ল্যাপটপ, ফার্নিচার) → ঐ মাসের লাভ থেকে সরাসরি বাদ যাবে।
+      </div>
+
+      <div class="field">
+        <label>খরচের ধরন</label>
+        <select id="e_kind">
+          <option value="overhead">মাসিক overhead (পার্সেলে ভাগ হবে)</option>
+          <option value="ad">Ad খরচ / ডলার কস্ট (পার্সেলে ভাগ হবে)</option>
+          <option value="onetime">এককালীন বড় খরচ (সরাসরি বাদ)</option>
+        </select>
+      </div>
+      <div class="grid">
+        <div class="field"><label>তারিখ</label><input type="date" id="e_date"></div>
+        <div class="field"><label>খরচের নাম</label><input type="text" id="e_cat" list="catList" placeholder="যেমন: Salary / Rent"><datalist id="catList">
+          <option value="Salary"><option value="Rent"><option value="বিদ্যুৎ"><option value="ইন্টারনেট"><option value="Facebook Ad"><option value="ল্যাপটপ"><option value="ফার্নিচার"><option value="Other">
+        </datalist></div>
+      </div>
+      <div class="field"><label>টাকার পরিমাণ ৳</label><input type="number" id="e_amt" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label>কোন একাউন্ট থেকে</label><select id="e_acc"><option>Cash</option><option>Bank</option><option>bKash</option></select></div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="e_note" placeholder="যেমন: অফিস ভাড়া, সেপ্টেম্বর"></div>
+      <button class="btn" id="e_save">খরচ যোগ করুন</button>
+    </div>
+    <div class="card"><h2>সাম্প্রতিক খরচ</h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ২০টি)</label><input type="date" id="expensesDate"></div>
+      <div class="list" id="expensesList"><div class="empty">লোড হচ্ছে…</div></div></div>
+  </section>
+
+  <!-- ============ STOCK ============ -->
+  <section class="panel" id="panel-stock">
+    <div class="card">
+      <h2>স্টকে মোট মালের মূল্য
+        <span class="sub">কেনা দামে (গড়)</span>
+      </h2>
+      <div class="val num" id="stockTotal" style="font-size:26px;font-weight:700;color:var(--primary)">—</div>
+    </div>
+    <div class="card">
+      <h2>স্টক যোগ করুন (মাল কেনা / ওপেনিং)
+        <span class="sub">নতুন মাল ঢুকলে বা ওপেনিং স্টক বসাতে</span>
+      </h2>
+      <div class="grid">
+        <div class="field"><label>তারিখ</label><input type="date" id="st_date"></div>
+        <div class="field"><label>প্রোডাক্ট</label><select id="st_product"></select></div>
+      </div>
+      <div class="grid" id="st_colorWrap" style="display:none">
+        <div class="field"><label>কালার</label><select id="st_color"></select></div>
+        <div class="field" id="st_colorMF" style="display:none"><label>কালার (টাইপ করুন)</label><input type="text" id="st_colorM" placeholder="যেমন: মেরুন"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>পিস (qty)</label><input type="number" id="st_qty" min="1" step="1" placeholder="0"></div>
+        <div class="field"><label>প্রতি পিস কেনা দাম ৳</label><input type="number" id="st_cost" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="st_note" placeholder="যেমন: ওপেনিং স্টক / নতুন চালান"></div>
+      <button class="btn" id="st_save">স্টক যোগ করুন</button>
+    </div>
+    <div class="card">
+      <h2>বর্তমান স্টক</h2>
+      <div class="list" id="stockList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+    <div class="card">
+      <h2>সাম্প্রতিক স্টক যোগ</h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ২০টি)</label><input type="date" id="stockInDate"></div>
+      <div class="list" id="stockInList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+  </section>
+
+  <!-- ============ CASH ============ -->
+  <section class="panel" id="panel-cash">
+    <div class="card">
+      <h2>একাউন্ট ব্যালেন্স<span class="sub">এই মুহূর্তে হাতে কত টাকা</span></h2>
+      <div class="summary" style="margin-top:6px">
+        <div class="chip" style="background:var(--surface-2);border-color:var(--line)"><div class="lbl" style="color:var(--muted)">Bank</div><div class="val num" id="balBank" style="color:var(--primary)">—</div></div>
+        <div class="chip" style="background:var(--surface-2);border-color:var(--line)"><div class="lbl" style="color:var(--muted)">bKash</div><div class="val num" id="balBkash" style="color:var(--primary)">—</div></div>
+        <div class="chip" style="background:var(--surface-2);border-color:var(--line)"><div class="lbl" style="color:var(--muted)">Cash</div><div class="val num" id="balCash" style="color:var(--primary)">—</div></div>
+        <div class="chip" style="background:var(--surface-2);border-color:var(--line)"><div class="lbl" style="color:var(--muted)">মোট</div><div class="val num" id="balTotal" style="color:var(--ink)">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>টাকা যোগ করুন<span class="sub">ওপেনিং ব্যালেন্স বা কুরিয়ার/অন্য উৎস থেকে টাকা এলে</span></h2>
+      <div class="grid">
+        <div class="field"><label>তারিখ</label><input type="date" id="ci_date"></div>
+        <div class="field"><label>একাউন্ট</label><select id="ci_acc"><option>Bank</option><option>bKash</option><option>Cash</option></select></div>
+      </div>
+      <div class="field"><label>টাকার পরিমাণ ৳</label><input type="number" id="ci_amt" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="ci_note" placeholder="যেমন: ওপেনিং / কুরিয়ার সেটেলমেন্ট"></div>
+      <button class="btn" id="ci_save">টাকা যোগ করুন</button>
+    </div>
+    <div class="card"><h2>সাম্প্রতিক টাকা যোগ</h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ২০টি)</label><input type="date" id="cashInDate"></div>
+      <div class="list" id="cashInList"><div class="empty">লোড হচ্ছে…</div></div></div>
+  </section>
+
+  <!-- ============ SALARY ============ -->
+  <section class="panel" id="panel-salary">
+    <div class="card">
+      <h2>কর্মচারী যোগ করুন<span class="sub">নাম, জয়েন ডেট, মাসিক বেতন</span></h2>
+      <div class="grid">
+        <div class="field"><label>নাম</label><input type="text" id="emp_name" placeholder="কর্মচারীর নাম"></div>
+        <div class="field"><label>জয়েন ডেট</label><input type="date" id="emp_join"></div>
+      </div>
+      <div class="field"><label>মাসিক বেতন ৳</label><input type="number" id="emp_salary" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="emp_note" placeholder="যেমন: পদবি / মোবাইল"></div>
+      <button class="btn" id="emp_save">কর্মচারী যোগ করুন</button>
+    </div>
+    <div class="card"><h2>কর্মচারী তালিকা</h2><div class="list" id="empList"><div class="empty">লোড হচ্ছে…</div></div></div>
+
+    <div class="card">
+      <h2>বেতন পরিশোধ<span class="sub">অগ্রিম বাদে হাতে পাবে কত — নিজে থেকে হিসাব হবে</span></h2>
+      <div class="grid">
+        <div class="field"><label>কর্মচারী</label><select id="sal_emp"><option value="">— বাছুন —</option></select></div>
+        <div class="field"><label>মাস</label><input type="month" id="sal_month"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>মোট বেতন ৳</label><input type="number" id="sal_amount" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>বোনাস ৳</label><input type="number" id="sal_bonus" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>অগ্রিম নিয়েছে ৳</label><input type="number" id="sal_adv" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>পরিশোধের তারিখ</label><input type="date" id="sal_date"></div>
+      </div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="sal_note" placeholder="মন্তব্য"></div>
+      <div class="formula" id="sal_net">হাতে পাবে: ৳0</div>
+      <button class="btn" id="sal_save" style="margin-top:10px">বেতন রেকর্ড করুন</button>
+    </div>
+    <div class="card"><h2>বেতন রেকর্ড</h2><div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div></div>
+  </section>
+
+  <!-- ============ REPORT ============ -->
+  <section class="panel" id="panel-report">
+    <div class="card">
+      <h2>দৈনিক লাভ-ক্ষতি<span class="sub">একটা দিন বাছুন</span></h2>
+      <div class="field"><input type="date" id="rep_day"></div>
+      <div id="dailyReport"></div>
+    </div>
+    <div class="card">
+      <h2>মাসিক রিপোর্ট<span class="sub">মাস বাছুন</span></h2>
+      <div class="field"><input type="month" id="rep_month"></div>
+      <div id="monthlyReport"></div>
+    </div>
+
+    <div class="card">
+      <button class="btn" id="openExport">📊 Export (Excel)</button>
+      <button class="btn ghost" id="openAI" style="margin-top:10px">🤖 AI বিশ্লেষণ (পুরো বছর)</button>
+    </div>
+  </section>
+
+  <!-- ===== বিক্রির বিস্তারিত (ভিউ) popup ===== -->
+  <div class="modal-bg" id="saleViewModal">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-head">
+        <h3>🔍 বিক্রির বিস্তারিত</h3>
+        <button class="modal-x" id="closeSaleView">&times;</button>
+      </div>
+      <div id="saleViewOut"></div>
+    </div>
+  </div>
+
+  <!-- ===== Export popup ===== -->
+  <div class="modal-bg" id="exportModal">
+    <div class="modal">
+      <div class="modal-head">
+        <h3>📊 Excel এ Export</h3>
+        <button class="modal-x" id="closeExport">&times;</button>
+      </div>
+      <div class="sub" style="color:var(--muted);font-size:12.5px;margin-bottom:14px">তারিখ বেছে, কী কী চান টিক দিয়ে, Excel নামান</div>
+
+      <label>তারিখ রেঞ্জ</label>
+      <div class="perm" style="margin-bottom:12px">
+        <span class="pill on" data-range="today">আজ</span>
+        <span class="pill" data-range="7d">গত ৭ দিন</span>
+        <span class="pill" data-range="month">এই মাস</span>
+        <span class="pill" data-range="custom">কাস্টম</span>
+      </div>
+      <div class="grid" id="customRange" style="display:none">
+        <div class="field"><label>শুরুর তারিখ</label><input type="date" id="ex_from"></div>
+        <div class="field"><label>শেষ তারিখ</label><input type="date" id="ex_to"></div>
+      </div>
+
+      <label style="margin-top:6px">কী কী থাকবে (টিক দিন)</label>
+      <div id="exSheets" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="summary" checked> সারাংশ (লাভ-ক্ষতি)</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="byproduct" checked> প্রোডাক্টভিত্তিক বিক্রি</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="daily" checked> দৈনিক লাভ</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="sales" checked> বিক্রির বিস্তারিত</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="returns" checked> রিটার্নের বিস্তারিত</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="expenses" checked> খরচের বিস্তারিত</label>
+        <label class="row-check" style="margin:0"><input type="checkbox" class="exchk" value="expsum" checked> খরচের সারাংশ (খাতভিত্তিক)</label>
+      </div>
+
+      <button class="btn" id="exportBtn">Excel ফাইল নামান</button>
+      <div class="note-inline" id="exRangeLbl"></div>
+    </div>
+  </div>
+
+  <!-- ===== Invoice popup ===== -->
+  <div class="modal-bg" id="invoiceModal">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-head">
+        <h3>🧾 Invoice বানান</h3>
+        <button class="modal-x" id="closeInvoice">&times;</button>
+      </div>
+
+      <label>কাস্টমারের নাম</label>
+      <div class="field"><input type="text" id="inv_cname" placeholder="কাস্টমারের নাম"></div>
+      <div class="grid">
+        <div class="field"><label>নম্বর</label><input type="text" id="inv_cphone" placeholder="017XXXXXXXX"></div>
+        <div class="field"><label>invoice নম্বর</label><input type="text" id="inv_no" placeholder="নিজে থেকে বসবে"></div>
+      </div>
+      <div class="field"><label>ঠিকানা</label><input type="text" id="inv_caddr" placeholder="কাস্টমারের ঠিকানা"></div>
+
+      <label style="margin-top:6px">প্রোডাক্ট</label>
+      <div id="invLines"></div>
+      <button class="btn ghost" type="button" id="invAddLine" style="margin:6px 0 12px">+ আরেকটা প্রোডাক্ট</button>
+
+      <div class="field"><label>ডেলিভারি চার্জ ৳ (না থাকলে 0)</label><input type="number" id="inv_ship" min="0" step="0.01" placeholder="0"></div>
+
+      <button class="btn" id="inv_make">Invoice তৈরি করুন (PDF)</button>
+    </div>
+  </div>
+
+  <!-- ===== Combo order popup ===== -->
+  <div class="modal-bg" id="comboModal">
+    <div class="modal" style="max-width:520px">
+      <div class="modal-head">
+        <h3>🧩 কম্বো অর্ডার</h3>
+        <button class="modal-x" id="closeCombo">&times;</button>
+      </div>
+      <div class="infobar">এক অর্ডারে একাধিক প্রোডাক্ট দিন। <b>ডেলিভারি ও প্যাকেজিং পুরো অর্ডারে একবার</b> বসবে — হিসাব ঠিক থাকবে।</div>
+      <div class="field"><label>তারিখ</label><input type="date" id="c_date"></div>
+      <label>প্রোডাক্ট লাইন</label>
+      <div id="comboLines"></div>
+      <button class="btn ghost" type="button" id="comboAddLine" style="margin:4px 0 12px">+ আরেকটা প্রোডাক্ট</button>
+      <div class="field"><label>পুরো কম্বোর মোট বিক্রয় মূল্য ৳</label><input type="number" id="c_price" min="0" step="0.01" placeholder="0"></div>
+      <div class="grid">
+        <div class="field"><label>ডেলিভারি ৳ (পুরো অর্ডারে একবার)</label><input type="number" id="c_dl" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>প্যাকেজিং ৳ (একবার)</label><input type="number" id="c_pk" min="0" step="0.01" placeholder="0"></div>
+      </div>
+      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="c_note" placeholder="যেমন: কাস্টমারের নাম / অর্ডার নম্বর"></div>
+      <div id="comboTotal" class="formula" style="font-size:13px">মোট বিক্রি: ৳0</div>
+      <button class="btn" id="c_save" style="margin-top:12px">কম্বো অর্ডার যোগ করুন</button>
+    </div>
+  </div>
+
+  <!-- ===== Edit popup ===== -->
+  <div class="modal-bg" id="editModal">
+    <div class="modal" style="max-width:460px">
+      <div class="modal-head">
+        <h3 id="editTitle">✏️ এডিট</h3>
+        <button class="modal-x" id="closeEdit">&times;</button>
+      </div>
+      <div id="editFields"></div>
+      <button class="btn" id="editSave" style="margin-top:8px">সেভ করুন</button>
+      <div class="note-inline" id="editHint"></div>
+    </div>
+  </div>
+
+  <datalist id="invProducts">
+    <option value="ট্যাংক ক্লিনার কম্ব"><option value="ট্যাংক এবং পাইপ ক্লিনার"><option value="শুধু ট্যাংক ক্লিনার"><option value="শুধু পাইপ ক্লিনার">
+  </datalist>
+
+  <!-- অফ-স্ক্রিন invoice কাগজ (PDF-এর জন্য) -->
+  <div id="invoicePaper" style="position:absolute;left:-9999px;top:0;width:760px;background:#fff;color:#0c2b2f;font-family:'Hind Siliguri',sans-serif"></div>
+
+  <!-- ===== AI বিশ্লেষণ popup ===== -->
+  <div class="modal-bg" id="aiModal">
+    <div class="modal" style="max-width:560px">
+      <div class="modal-head">
+        <h3>🤖 AI বিশ্লেষণ</h3>
+        <button class="modal-x" id="closeAI">&times;</button>
+      </div>
+      <div class="sub" style="color:var(--muted);font-size:12.5px;margin-bottom:14px">পুরো বছরের হিসাব দেখে বিশ্লেষণ ও পরামর্শ</div>
+      <div id="aiOut" style="white-space:pre-wrap;font-size:14px;line-height:1.8;background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:14px;min-height:80px">এখানে বিশ্লেষণ আসবে…</div>
+      <button class="btn" id="aiRun" style="margin-top:14px">বিশ্লেষণ করো</button>
+    </div>
+  </div>
+  <!-- ============ LOG ============ -->
+  <section class="panel" id="panel-log">
+    <div class="card">
+      <h2>কার্যক্রমের লগ
+        <span class="sub">কে কী যোগ করল, কখন — নতুন থেকে পুরনো</span>
+      </h2>
+      <div class="infobar">শুধু যোগ করা এন্ট্রি দেখাচ্ছে। লগইন সিস্টেম বানানোর আগের পুরনো এন্ট্রিতে "কে বসাল" নাও দেখাতে পারে।</div>
+      <div class="list" id="logList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ZONE CHANGE ============ -->
+  <section class="panel" id="panel-zone">
+    <div class="card">
+      <h2>জোন চেঞ্জ সারাংশ <span class="sub">একনজরে</span></h2>
+      <div class="summary" style="margin-bottom:12px">
+        <div class="chip"><div class="lbl">ওয়েটিং-এ (বর্তমান)</div><div class="val num" id="zsWait">—</div></div>
+        <div class="chip"><div class="lbl">আজ জোন চেঞ্জ</div><div class="val num" id="zsToday">—</div></div>
+        <div class="chip"><div class="lbl">এই মাসে জোন চেঞ্জ</div><div class="val num" id="zsMonth">—</div></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>তারিখ বাছুন (ঐ দিনের হিসাব)</label><input type="date" id="zoneSumDate"></div>
+        <div class="field"><label>ঐ দিনে</label><div id="zsByDate" class="infobar" style="margin:0">একটা তারিখ বাছুন</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>ওয়েটিং লিস্টে যোগ করুন <span class="sub">কাস্টমার নেয়নি এমন পার্সেল — ঐ এলাকায় নতুন অর্ডার এলে জোন চেঞ্জ করবেন</span></h2>
+      <div class="infobar">কাস্টমার পার্সেল না নিলে এখানে বসান — নাম, নম্বর, এলাকা, প্রোডাক্ট ও কুরিয়ার আইডি। পরে ঐ এলাকায় একই প্রোডাক্টের অর্ডার এলে নিচের ওয়েটিং লিস্ট থেকে "জোন চেঞ্জ করুন" চাপবেন।</div>
+      <div class="grid">
+        <div class="field"><label>তারিখ (ক্যান্সেল হলো)</label><input type="date" id="z_date"></div>
+        <div class="field"><label>প্রোডাক্ট</label><select id="z_product"></select></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>কাস্টমারের নাম (যে নেয়নি)</label><input type="text" id="z_fname" placeholder="নাম" autocomplete="off"></div>
+        <div class="field"><label>কাস্টমার নম্বর</label><input type="text" id="z_first" placeholder="01XXXXXXXXX" autocomplete="off"></div>
+      </div>
+      <div class="grid">
+        <div class="field"><label>এলাকা (location)</label><input type="text" id="z_loc" placeholder="যেমন: কুমিল্লা" autocomplete="off"></div>
+        <div class="field"><label>কুরিয়ার পার্সেল আইডি</label><input type="text" id="z_parcel" placeholder="কনসাইনমেন্ট আইডি" autocomplete="off"></div>
+      </div>
+      <button class="btn" id="z_save">ওয়েটিং লিস্টে যোগ করুন</button>
+    </div>
+
+    <div class="card">
+      <h2>ওয়েটিং লিস্ট <span class="sub">জোন চেঞ্জের অপেক্ষায় থাকা পার্সেল</span></h2>
+      <div class="list" id="zoneWaitList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+
+    <div class="card">
+      <h2>জোন চেঞ্জ হয়েছে <span class="sub">সম্পন্ন</span></h2>
+      <div class="field"><label>তারিখ বাছুন (খালি রাখলে সাম্প্রতিক ২০টি)</label><input type="date" id="zoneDate"></div>
+      <div class="list" id="zoneDoneList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+  </section>
+
+  <!-- জোন চেঞ্জ মডাল (নতুন কাস্টমার) -->
+  <div class="modal-bg" id="zcModal">
+    <div class="modal" style="max-width:420px">
+      <div class="modal-head"><h3>🔄 জোন চেঞ্জ করুন</h3><button class="modal-x" id="zcClose">&times;</button></div>
+      <div id="zcInfo" style="font-size:13px;color:var(--muted);margin-bottom:12px"></div>
+      <div class="field"><label>নতুন কাস্টমারের নাম</label><input type="text" id="zc_name" placeholder="যাকে এখন পাঠাবেন" autocomplete="off"></div>
+      <div class="field"><label>নতুন কাস্টমার নম্বর</label><input type="text" id="zc_num" placeholder="01XXXXXXXXX" autocomplete="off"></div>
+      <button class="btn" id="zcConfirm">জোন চেঞ্জ কনফার্ম</button>
+    </div>
+  </div>
+
+  <!-- ============ AGENT (call center) ============ -->
+  <section class="panel" id="panel-agent">
+    <div class="card">
+      <h2>এজেন্ট পারফরম্যান্স <span class="sub">প্রতিদিন কে কয়টা অর্ডার কনফার্ম করল (কল সেন্টার)</span></h2>
+      <div class="field"><label>তারিখ বাছুন</label><input type="date" id="agentDate"></div>
+      <div class="list" id="agentPerf"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+    <div class="card">
+      <h2>কল সেন্টার অ্যাক্সেস <span class="sub">কর্মচারীকে role দিন — agent শুধু কনফার্ম, leader সার্চ+স্ট্যাটাস, admin সব</span></h2>
+      <div class="list" id="agentAccess"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+  </section>
+
+  <!-- ============ ADMIN ============ -->
+  <section class="panel" id="panel-admin">
+    <div class="card">
+      <h2>মোছার অনুরোধ
+        <span class="sub">কর্মচারীরা যা মুছতে চায় — আপনি অনুমোদন দিলে তবেই মুছবে</span>
+      </h2>
+      <div class="list" id="delReqList"><div class="empty">কোনো অনুরোধ নেই।</div></div>
+    </div>
+    <div class="card">
+      <h2>এডিট অনুরোধ
+        <span class="sub">কর্মচারীরা যা বদলাতে চায় — আপনি অনুমোদন দিলে তবেই বদলাবে</span>
+      </h2>
+      <div class="list" id="editReqList"><div class="empty">কোনো অনুরোধ নেই।</div></div>
+    </div>
+    <div class="card">
+      <h2>কর্মচারী ও অ্যাক্সেস
+        <span class="sub">কে কোন ট্যাব ব্যবহার করতে পারবে ঠিক করুন</span>
+      </h2>
+      <div class="infobar">
+        নতুন কর্মচারী যোগ করতে: Supabase → Authentication → Add user থেকে তার ইমেইল ও পাসওয়ার্ড বানান। তারপর সে নিচের তালিকায় চলে আসবে — এখানে অ্যাক্সেস দিন।<br>
+        <b>টগল সবুজ = অ্যাক্সেস আছে।</b> ডিফল্টে নতুন কর্মচারী কিছুই পায় না।
+      </div>
+      <div class="list" id="adminList"><div class="empty">লোড হচ্ছে…</div></div>
+    </div>
+  </section>
+
+      </main>
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ===== Floating AI chat (admin only) ===== -->
+<button id="chatFab" title="AI সহকারী">💬</button>
+<div id="chatPanel">
+  <div class="chat-head">
+    <b>🤖 হিসাব সহকারী</b>
+    <button class="cx" id="chatClose">&times;</button>
+  </div>
+  <div class="chat-body" id="chatBody"></div>
+  <div class="chat-foot">
+    <input type="text" id="chatInput" placeholder="প্রশ্ন লিখুন…">
+    <button id="chatSend">➤</button>
+  </div>
+</div>
+<!-- ===== Notification popup (delete requests, admin only) ===== -->
+<div class="modal-bg" id="notifModal">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-head">
+      <h3>🔔 মোছার অনুরোধ</h3>
+      <button class="modal-x" id="notifClose">&times;</button>
+    </div>
+    <div class="sub" style="color:var(--muted);font-size:12.5px;margin-bottom:12px">অনুমোদন করলে মুছবে, বাতিল করলে এন্ট্রি অক্ষত থাকবে</div>
+    <div class="list" id="notifList"><div class="empty">কোনো অনুরোধ নেই।</div></div>
+  </div>
+</div>
+
+</div><!-- /appRoot -->
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- xlsx / html2canvas / jspdf দরকার হলে তবেই লোড হবে (দ্রুত খোলার জন্য) -->
+<script>
+  function loadScript(src){ return new Promise((res,rej)=>{ if(document.querySelector('script[data-ls="'+src+'"]')){ res(); return; } const s=document.createElement('script'); s.src=src; s.setAttribute('data-ls',src); s.onload=()=>res(); s.onerror=()=>rej(new Error('load fail')); document.head.appendChild(s); }); }
+  let _xlsxP=null,_pdfP=null;
+  async function ensureXlsx(){ if(typeof XLSX!=='undefined') return true; try{ _xlsxP=_xlsxP||loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'); await _xlsxP; }catch(_){} return typeof XLSX!=='undefined'; }
+  async function ensurePdf(){ if(typeof html2canvas!=='undefined' && window.jspdf) return true; try{ _pdfP=_pdfP||Promise.all([loadScript('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js'),loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js')]); await _pdfP; }catch(_){} return typeof html2canvas!=='undefined' && !!window.jspdf; }
+</script>
+<script>
+/* ---------- Supabase সংযোগ ---------- */
+const SB_URL = "https://nqhffnciyabqnqrtnrpk.supabase.co";
+const SB_KEY = "sb_publishable_mhwloYGImNXg0QIDzZz9bQ_5gAyYhOo";
+const db = supabase.createClient(SB_URL, SB_KEY);
+
+/* ---------- AI বিশ্লেষণ সেটিং ---------- */
+// ভবিষ্যতে সস্তা/নতুন মডেল এলে শুধু নিচের এই এক লাইন বদলান:
+const AI_MODEL = "openai/gpt-4o-mini";
+// নিচে আপনার OpenRouter key বসান (sk-or-... দিয়ে শুরু):
+const OPENROUTER_KEY = "PASTE_YOUR_OPENROUTER_KEY_HERE";
+
+/* ---------- সহায়ক ---------- */
+const $ = id => document.getElementById(id);
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+const monthStr = () => todayStr().slice(0,7);
+const monthOf = s => (s||'').slice(0,7);
+const n = v => { const x=parseFloat(v); return isNaN(x)?0:x; };
+function money(v){ const neg=v<0; const s=Math.abs(v).toLocaleString('en-US',{maximumFractionDigits:2}); return (neg?'−৳':'৳')+s; }
+function toast(msg,err){ const t=$('toast'); t.textContent=msg; t.className='toast show'+(err?' err':''); setTimeout(()=>t.className='toast',2600); }
+const bnMonths=['জানুয়ারি','ফেব্রুয়ারি','মার্চ','এপ্রিল','মে','জুন','জুলাই','আগস্ট','সেপ্টেম্বর','অক্টোবর','নভেম্বর','ডিসেম্বর'];
+function niceDate(s){ if(!s) return ''; const [y,m,d]=s.split('-'); return `${parseInt(d)} ${bnMonths[parseInt(m)-1]} ${y}`; }
+function niceMonth(s){ if(!s) return ''; const [y,m]=s.split('-'); return `${bnMonths[parseInt(m)-1]} ${y}`; }
+const kindOf = e => (e.kind==='onetime'||e.kind==='ad') ? e.kind : 'overhead'; // অজানা হলে overhead
+
+/* ---------- ডেটা ---------- */
+/* ---------- ব্যবসা ও ডেটা ---------- */
+let CURRENT_BIZ='aqua';
+const BIZ={
+  aqua:  { label:'Aqua Purify BD', products:['ট্যাংক ক্লিনার কম্ব','ট্যাংক এবং পাইপ ক্লিনার','শুধু ট্যাংক ক্লিনার','শুধু পাইপ ক্লিনার'],
+           company:{ name:'Aqua Purify BD', addr:'Savar, Dhaka, Bangladesh', phone:'01744182321' } },
+  redbox:{ label:'Redbox', products:['স্লিপিং বাম ১৫ গ্রাম','স্লিপিং বাম ২০ গ্রাম','স্লিপিং বাম ৫০ গ্রাম','টাইগার বাম ১৫ গ্রাম','টাইগার বাম ২০ গ্রাম','টাইগার বাম ৫০ গ্রাম','রেটিনল শট','wax body','wax face'],
+           company:{ name:'Redbox', addr:'Savar, Dhaka, Bangladesh', phone:'01744182321' } },
+  yeaqqen:{ label:'YAQQEN', products:['রেগুলার শাল','প্রিমিয়াম শাল'],
+           colors:['ব্ল্যাক','হোয়াইট','অফ-হোয়াইট','চকলেট'],
+           company:{ name:'YAQQEN', addr:'Savar, Dhaka, Bangladesh', phone:'01744182321' } },
+};
+const bizOf = x => x.business || 'aqua';
+const bizLabel = b => (BIZ[b]&&BIZ[b].label) || 'Aqua Purify BD';
+let ALL_SALES=[], ALL_RETURNS=[], ALL_EXPENSES=[], ALL_STOCK=[], ALL_CASHIN=[], ALL_ZONE=[];
+let SALES=[], RETURNS=[], EXPENSES=[], STOCK=[], CASHIN=[], ZONE=[], PROFILES=[], DELREQS=[], EDITREQS=[], EMPLOYEES=[], SALARY=[], CCORDERS=[];
+
+function applyBizFilter(){
+  SALES   = ALL_SALES.filter(x=>bizOf(x)===CURRENT_BIZ);
+  RETURNS = ALL_RETURNS.filter(x=>bizOf(x)===CURRENT_BIZ);
+  EXPENSES= ALL_EXPENSES.filter(x=>bizOf(x)===CURRENT_BIZ);
+  STOCK   = ALL_STOCK.filter(x=>bizOf(x)===CURRENT_BIZ);
+  CASHIN  = ALL_CASHIN.filter(x=>bizOf(x)===CURRENT_BIZ);
+  ZONE    = ALL_ZONE.filter(x=>bizOf(x)===CURRENT_BIZ);
+}
+async function loadAll(){
+  try{
+    // সব টেবিল একসাথে (parallel) — অনেক দ্রুত
+    const [s,r,e,stk,zn]=await Promise.all([
+      db.from('hisab_sales').select('*').order('sale_date',{ascending:false}).order('id',{ascending:false}),
+      db.from('hisab_returns').select('*').order('return_date',{ascending:false}).order('id',{ascending:false}),
+      db.from('hisab_expenses').select('*').order('expense_date',{ascending:false}).order('id',{ascending:false}),
+      db.from('hisab_stock').select('*').order('stock_date',{ascending:false}).order('id',{ascending:false}),
+      db.from('zone_changes').select('*').order('id',{ascending:false}),
+    ]);
+    if(s.error||r.error||e.error) throw (s.error||r.error||e.error);
+    ALL_SALES=s.data||[]; ALL_RETURNS=r.data||[]; ALL_EXPENSES=e.data||[]; ALL_STOCK=stk.data||[];
+    ALL_ZONE = zn.error ? [] : (zn.data||[]);
+    if(CURRENT_PROFILE && CURRENT_PROFILE.role==='admin'){
+      const [pr,dr,er,ci,emp,sal,cc]=await Promise.all([
+        db.from('profiles').select('*').order('created_at',{ascending:true}),
+        db.from('delete_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
+        db.from('edit_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
+        db.from('hisab_cashin').select('*').order('cash_date',{ascending:false}).order('id',{ascending:false}),
+        db.from('hisab_employees').select('*').order('id',{ascending:true}),
+        db.from('hisab_salary').select('*').order('created_at',{ascending:false}),
+        db.from('cc_orders').select('*').order('confirm_date',{ascending:false}),
+      ]);
+      PROFILES=pr.data||[]; DELREQS=dr.data||[]; EDITREQS=er.data||[];
+      ALL_CASHIN=ci.data||[]; EMPLOYEES=emp.data||[]; SALARY=sal.data||[];
+      CCORDERS = cc.error ? [] : (cc.data||[]);
+    }
+    applyBizFilter();
+    renderAll();
+  }catch(err){
+    console.error(err);
+    const msg=(err&&err.message)?err.message:'অজানা সমস্যা';
+    const hint=location.protocol==='file:'?'ফাইলটা file:// দিয়ে খোলা — https ঠিকানায় খুলুন।':'সংযোগ চেক করুন।';
+    ['salesList','returnsList','expensesList'].forEach(id=>{const el=$(id); if(el) el.innerHTML=`<div class="empty" style="color:var(--loss)">লোড হয়নি: ${msg}<br>${hint}</div>`;});
+    toast('ডেটা লোডে সমস্যা: '+msg,true);
+  }
+}
+
+/* ঐ প্রোডাক্ট ঐ তারিখে কত দামে বিক্রি হয়েছিল (রিটার্ন হিসাবের জন্য) */
+function saleUnitInfo(product,dateStr){
+  const rows=SALES.filter(x=>x.product===product && x.sale_date===dateStr);
+  if(!rows.length) return null;
+  let q=0,price=0,pc=0;
+  rows.forEach(x=>{ q+=n(x.qty); price+=n(x.unit_price)*n(x.qty); pc+=n(x.unit_product_cost)*n(x.qty); });
+  if(q===0) return null;
+  return {price:price/q, pc:pc/q};
+}
+
+/* ---------- মাসভিত্তিক সহায়ক ---------- */
+const overheadTotal = ym => EXPENSES.filter(e=>kindOf(e)==='overhead' && monthOf(e.expense_date)===ym).reduce((a,e)=>a+n(e.amount),0);
+const adTotal       = ym => EXPENSES.filter(e=>kindOf(e)==='ad'       && monthOf(e.expense_date)===ym).reduce((a,e)=>a+n(e.amount),0);
+const oneTimeTotal  = ym => EXPENSES.filter(e=>kindOf(e)==='onetime'  && monthOf(e.expense_date)===ym).reduce((a,e)=>a+n(e.amount),0);
+const parcelsTotal  = ym => SALES.filter(s=>monthOf(s.sale_date)===ym).reduce((a,s)=>a+n(s.qty),0);
+function perParcelOp(ym){ const p=parcelsTotal(ym); return p>0 ? overheadTotal(ym)/p : 0; }
+function perParcelAd(ym){ const p=parcelsTotal(ym); return p>0 ? adTotal(ym)/p : 0; }
+
+/* ---------- হিসাব ---------- */
+// অর্ডার সংখ্যা: সেট করা থাকলে সেটা; না থাকলে পুরনো একক এন্ট্রি = পিস সংখ্যা, পুরনো কম্বো = আন্দাজ করি না (0)
+const ordOf = s => {
+  if(s.order_count!==null && s.order_count!==undefined && s.order_count!=='' && !isNaN(s.order_count)) return n(s.order_count);
+  return s.order_id ? 0 : n(s.qty);
+};
+// ডেলিভারি কতবার গুণ হবে: অর্ডার সংখ্যা সেট থাকলে সেটা (প্রতি অর্ডার/পার্সেলে একবার), না থাকলে পুরনো এন্ট্রি = পিস (পুরনো হিসাব ঠিক রাখে)
+const delivCount = s => (s.order_count!==null && s.order_count!==undefined && s.order_count!=='' && !isNaN(s.order_count)) ? n(s.order_count) : n(s.qty);
+// এক সারির মোট সরাসরি খরচ: (প্রোডাক্ট কস্ট + প্যাকেজিং) × পিস  +  ডেলিভারি × অর্ডার সংখ্যা
+const rowDirectCost = s => n(s.qty)*(n(s.unit_product_cost)+n(s.unit_packaging)) + delivCount(s)*n(s.unit_delivery);
+
+function calcRange(datePred, ym){
+  let revenue=0, directCost=0, returnLoss=0, parcels=0, orders=0;
+  SALES.forEach(s=>{ if(!datePred(s.sale_date)) return;
+    revenue += n(s.qty)*n(s.unit_price);
+    directCost += rowDirectCost(s);
+    parcels += n(s.qty);
+    orders += ordOf(s);
+  });
+  RETURNS.forEach(r=>{ if(!datePred(r.original_sale_date)) return;
+    const info=saleUnitInfo(r.product,r.original_sale_date);
+    const price=info?info.price:0;
+    const damaged=n(r.unit_product_cost)>0;
+    const pcRec=damaged?0:(info?info.pc:0);
+    returnLoss += n(r.qty)*(price-pcRec);
+  });
+  const opRate=perParcelOp(ym);
+  const opCost=opRate*parcels;                 // ঐ পরিসরে যত পার্সেল, তার অপারেশন কস্ট
+  const adRate=perParcelAd(ym);
+  const adCost=adRate*parcels;                 // ঐ পরিসরে যত পার্সেল, তার Ad কস্ট
+  const oneTime=EXPENSES.filter(e=>kindOf(e)==='onetime'&&datePred(e.expense_date)).reduce((a,e)=>a+n(e.amount),0);
+  const net=revenue-directCost-opCost-adCost-returnLoss-oneTime;
+  return {revenue,directCost,opCost,opRate,adCost,adRate,returnLoss,oneTime,net,parcels,orders};
+}
+const calcDay   = d  => calcRange(x=>x===d, monthOf(d));           // দৈনিক: ঐ মাসের rate ব্যবহার করে
+const calcMonth = ym => calcRange(x=>monthOf(x)===ym, ym);         // মাসিক: পুরো মাস
+
+/* ---------- রেন্ডার ---------- */
+function renderSummary(){
+  const day=calcDay(todayStr());
+  const sale=day.revenue, cost=day.revenue-day.net, net=day.net;
+  const mObj=calcMonth(monthStr());
+  const m=mObj.net;
+  const set=(id,v)=>{ const el=$(id); if(el){ el.textContent=money(v); el.classList.toggle('small',Math.abs(v)>=1e7);} };
+  set('sumSale',sale); set('sumCost',cost); set('sumToday',net); set('sumMonth',m);
+  const setCount=(id,v)=>{ const el=$(id); if(el){ el.textContent=v+' অর্ডার'; el.classList.toggle('small',true);} };
+  setCount('sumOrdToday',day.orders); setCount('sumOrdMonth',mObj.orders);
+  $('monthLbl').textContent=niceMonth(monthStr())+' নিট লাভ';
+  const mol=$('monthOrdLbl'); if(mol) mol.textContent=niceMonth(monthStr())+' অর্ডার';
+}
+function renderProducts(){
+  const opts='<option value="">— প্রোডাক্ট বাছুন —</option>'+BIZ[CURRENT_BIZ].products.map(nm=>`<option value="${nm}">${nm}</option>`).join('');
+  ['s_product','r_product','st_product','z_product'].forEach(id=>{ const el=$(id); if(el){ const v=el.value; el.innerHTML=opts; el.value=v; } });
+  const inv=$('invProducts'); if(inv) inv.innerHTML=BIZ[CURRENT_BIZ].products.map(nm=>`<option value="${nm}">`).join('');
+  // কালার (শুধু যে ব্যবসায় colors আছে — যেমন YAQQEN)
+  const cols=BIZ[CURRENT_BIZ].colors;
+  const copts = cols ? ('<option value="">— কালার বাছুন —</option>'+cols.map(c=>`<option value="${c}">${c}</option>`).join('')+'<option value="__manual__">অন্য (টাইপ করুন)</option>') : '';
+  [['s_colorWrap','s_color','s_colorMF','s_colorM'],['r_colorWrap','r_color','r_colorMF','r_colorM'],['st_colorWrap','st_color','st_colorMF','st_colorM']].forEach(([wrap,sel,mf,man])=>{
+    const w=$(wrap); if(!w) return;
+    if(cols){ const el=$(sel); const v=el.value; el.innerHTML=copts; el.value=v; w.style.display=''; }
+    else { w.style.display='none'; const mff=$(mf); if(mff) mff.style.display='none'; const mm=$(man); if(mm) mm.value=''; }
+  });
+}
+// কালার helpers (YAQQEN)
+function pickedColor(selId,manId){ const el=$(selId); if(!el) return ''; if(el.value==='__manual__') return ($(manId)?$(manId).value:'').trim(); return el.value; }
+function finalProduct(base,selId,manId){ if(!BIZ[CURRENT_BIZ].colors) return base; const c=pickedColor(selId,manId); return c ? (base+' · '+c) : base; }
+function wireColorSel(selId,mfId){ const el=$(selId); if(!el) return; el.addEventListener('change',()=>{ const mf=$(mfId); if(mf) mf.style.display = el.value==='__manual__' ? '' : 'none'; }); }
+wireColorSel('s_color','s_colorMF'); wireColorSel('r_color','r_colorMF'); wireColorSel('st_color','st_colorMF');
+function renderSalesList(){
+  const box=$('salesList');
+  if(!SALES.length){ box.innerHTML='<div class="empty">এখনো কোনো বিক্রি নেই।</div>'; return; }
+  const combos={}, items=[];
+  SALES.forEach(s=>{
+    if(s.order_id){ (combos[s.order_id]=combos[s.order_id]||[]).push(s); }
+    else items.push({type:'single', key:Number(s.id), row:s});
+  });
+  Object.keys(combos).forEach(oid=>{ const rows=combos[oid]; items.push({type:'combo', key:Math.max(...rows.map(r=>Number(r.id))), oid, rows}); });
+  items.sort((a,b)=>b.key-a.key);
+  const d=($('salesDate')?$('salesDate').value:'');
+  let list=items;
+  if(d){ list=items.filter(it=> it.type==='single' ? it.row.sale_date===d : it.rows[0].sale_date===d ); }
+  const shown = d ? list : list.slice(0,15);
+  let head='';
+  if(d){
+    let tQty=0,tRev=0,tOrd=0;
+    list.forEach(it=>{
+      if(it.type==='single'){ tQty+=n(it.row.qty); tRev+=n(it.row.qty)*n(it.row.unit_price); tOrd+=ordOf(it.row); }
+      else { it.rows.forEach(s=>{ tQty+=n(s.qty); tRev+=n(s.qty)*n(s.unit_price); }); tOrd += (it.rows.some(r=>r.order_count!=null)? it.rows.reduce((a,r)=>a+n(r.order_count),0) : 1); }
+    });
+    head=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট <b>${tQty} পিস</b> · <b>${tOrd} অর্ডার</b> · বিক্রি <b>${money(tRev)}</b></div>`;
+  }
+  box.innerHTML = head + ((shown.map(it=>{
+    if(it.type==='single'){
+      const s=it.row, rev=n(s.qty)*n(s.unit_price), cost=rowDirectCost(s), gross=rev-cost;
+      const ocTxt = (s.order_count!=null && s.order_count!=='' && !isNaN(s.order_count)) ? ` · ${n(s.order_count)} অর্ডার` : '';
+      return `<div class="item"><div>
+          <div class="t">${s.product} · ${s.qty} পিস${ocTxt}</div>
+          <div class="m">${niceDate(s.sale_date)} · বিক্রি ${money(rev)} · খরচ ${money(cost)}${s.note?' · '+s.note:''}</div>
+        </div><div style="text-align:right">
+          <div class="amt ${gross>=0?'pos':'neg'}">${money(gross)}</div>
+          <button class="viw" data-id="${s.id}">ভিউ</button>
+          <button class="edt" data-t="hisab_sales" data-id="${s.id}">এডিট</button>
+          <button class="del" data-t="hisab_sales" data-id="${s.id}">মুছুন</button>
+        </div></div>`;
+    }
+    // কম্বো — একসাথে দেখাও
+    let rev=0,cost=0,qty=0; const names=[];
+    it.rows.forEach(s=>{ rev+=n(s.qty)*n(s.unit_price); cost+=rowDirectCost(s); qty+=n(s.qty); names.push(s.product+(n(s.qty)>1?' ×'+s.qty:'')); });
+    const gross=rev-cost, nm=names.join(' + ');
+    const cnote=it.rows[0].note;
+    return `<div class="item"><div>
+        <div class="t">${nm} <span class="badge oh">কম্বো · ১ অর্ডার</span></div>
+        <div class="m">${niceDate(it.rows[0].sale_date)} · ${qty} পিস · বিক্রি ${money(rev)} · খরচ ${money(cost)}${cnote?' · '+cnote:''}</div>
+      </div><div style="text-align:right">
+        <div class="amt ${gross>=0?'pos':'neg'}">${money(gross)}</div>
+        <button class="viw" data-order="${it.oid}">ভিউ</button>
+        <button class="del" data-t="hisab_sales" data-order="${it.oid}" data-descr="কম্বো: ${nm}">মুছুন</button>
+      </div></div>`;
+  }).join('')) || '<div class="empty">'+(d?'ঐ দিনে কোনো বিক্রি নেই।':'কিছু পাওয়া যায়নি।')+'</div>');
+}
+function renderReturnsList(){
+  const box=$('returnsList');
+  if(!RETURNS.length){ box.innerHTML='<div class="empty">এখনো কোনো রিটার্ন নেই।</div>'; return; }
+  const lossOf=r=>{ const info=saleUnitInfo(r.product,r.original_sale_date); const price=info?info.price:0; const damaged=n(r.unit_product_cost)>0; const pcRec=damaged?0:(info?info.pc:0); return n(r.qty)*(price-pcRec); };
+  const d=($('returnsDate')?$('returnsDate').value:'');
+  const list = d ? RETURNS.filter(r=>r.return_date===d) : RETURNS;
+  const shown = d ? list : list.slice(0,15);
+  let head='';
+  if(d){
+    let tQty=0,tLoss=0; list.forEach(r=>{ tQty+=n(r.qty); tLoss+=lossOf(r); });
+    head=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট <b>${tQty} পিস</b> · রিটার্ন লস <b>${money(tLoss)}</b></div>`;
+  }
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো রিটার্ন নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(r=>{
+    const info=saleUnitInfo(r.product,r.original_sale_date);
+    const price=info?info.price:0;
+    const damaged=n(r.unit_product_cost)>0;
+    const pcRec=damaged?0:(info?info.pc:0);
+    const loss=n(r.qty)*(price-pcRec);
+    return `<div class="item"><div>
+        <div class="t">${r.product} · ${r.qty} পিস ${damaged?'<span class="badge ot">ড্যামেজ</span>':''}</div>
+        <div class="m">ফেরত ${niceDate(r.return_date)} · মূল বিক্রি ${niceDate(r.original_sale_date)}</div>
+      </div><div style="text-align:right">
+        <div class="amt neg">−${money(loss)}</div>
+        <button class="edt" data-t="hisab_returns" data-id="${r.id}">এডিট</button>
+        <button class="del" data-t="hisab_returns" data-id="${r.id}">মুছুন</button>
+      </div></div>`;
+  }).join('');
+}
+function renderExpensesList(){
+  const box=$('expensesList');
+  if(!EXPENSES.length){ box.innerHTML='<div class="empty">এখনো কোনো খরচ নেই।</div>'; return; }
+  const d=($('expensesDate')?$('expensesDate').value:'');
+  const list = d ? EXPENSES.filter(e=>e.expense_date===d) : EXPENSES;
+  const shown = d ? list : list.slice(0,20);
+  let head='';
+  if(d){ let tAmt=0; list.forEach(e=>tAmt+=n(e.amount)); head=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট খরচ <b>${money(tAmt)}</b> · <b>${list.length}টি</b></div>`; }
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো খরচ নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(e=>{
+    const ot=kindOf(e)==='onetime';
+    return `<div class="item"><div>
+        <div class="t">${e.category||'খরচ'} <span class="badge ${ot?'ot':'oh'}">${ot?'একবার':'overhead'}</span></div>
+        <div class="m">${niceDate(e.expense_date)}${e.account?' · '+e.account:''}${e.note?' · '+e.note:''}</div>
+      </div><div style="text-align:right">
+        <div class="amt neg">−${money(n(e.amount))}</div>
+        <button class="edt" data-t="hisab_expenses" data-id="${e.id}">এডিট</button>
+        <button class="del" data-t="hisab_expenses" data-id="${e.id}">মুছুন</button>
+      </div></div>`;
+  }).join('');
+}
+function reportHTML(r,ym){
+  const netCls=r.net>=0?'pos':'neg';
+  const opR=r.opRate?money(r.opRate):'৳0';
+  const adR=r.adRate?money(r.adRate):'৳0';
+  return `
+    <div class="report-line"><span class="k">মোট পার্সেল · অর্ডার</span><span class="v num">${r.parcels} পিস · ${r.orders} অর্ডার</span></div>
+    <div class="report-line"><span class="k">মোট বিক্রি</span><span class="v num">${money(r.revenue)}</span></div>
+    <div class="report-line"><span class="k">− সরাসরি খরচ (পণ্য+প্যাকেজিং+ডেলিভারি)</span><span class="v num neg">${money(r.directCost)}</span></div>
+    <div class="report-line"><span class="k">− অপারেশন কস্ট (auto)</span><span class="v num neg">${money(r.opCost)}</span></div>
+    <div class="report-line"><span class="k">− Ad কস্ট (auto)</span><span class="v num neg">${money(r.adCost)}</span></div>
+    <div class="report-line"><span class="k">− রিটার্ন লস</span><span class="v num neg">${money(r.returnLoss)}</span></div>
+    <div class="report-line"><span class="k">− এককালীন বড় খরচ</span><span class="v num neg">${money(r.oneTime)}</span></div>
+    <div class="report-line total"><span class="k">নিট লাভ</span><span class="v num ${netCls}">${money(r.net)}</span></div>
+    <div class="report-note">${niceMonth(ym)} — প্রতি পার্সেলে: অপারেশন <b>${opR}</b> · Ad <b>${adR}</b><br>(overhead ${money(overheadTotal(ym))} + Ad ${money(adTotal(ym))}) ÷ ${parcelsTotal(ym)} পার্সেল। মাস যত এগোবে হার তত নিখুঁত হবে।</div>`;
+}
+function renderDaily(){ const d=$('rep_day').value; $('dailyReport').innerHTML=d?reportHTML(calcDay(d),monthOf(d)):'<div class="empty">একটা দিন বাছুন।</div>'; }
+function renderMonthly(){ const m=$('rep_month').value; $('monthlyReport').innerHTML=m?reportHTML(calcMonth(m),m):'<div class="empty">একটা মাস বাছুন।</div>'; }
+function renderAdmin(){
+  const box=$('adminList'); if(!box) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')){ box.innerHTML=''; return; }
+  if(!PROFILES.length){ box.innerHTML='<div class="empty">এখনো কোনো কর্মচারী নেই। Supabase → Authentication → Add user থেকে যোগ করুন।</div>'; return; }
+  box.innerHTML=PROFILES.map(p=>{
+    const isMe = CURRENT_USER && p.id===CURRENT_USER.id;
+    const isAdm = p.role==='admin';
+    const pill=(field,label,on)=>`<span class="pill ${on?'on':''}" data-id="${p.id}" data-f="${field}" data-v="${on?0:1}">${label} ${on?'✓':'✗'}</span>`;
+    const grp=(prefix)=>`
+      ${pill(prefix+'_sales','বিক্রি',isAdm||p[prefix+'_sales'])}
+      ${pill(prefix+'_returns','রিটার্ন',isAdm||p[prefix+'_returns'])}
+      ${pill(prefix+'_expenses','খরচ',isAdm||p[prefix+'_expenses'])}
+      ${pill(prefix+'_stock','স্টক',isAdm||p[prefix+'_stock'])}`;
+    return `<div class="arow">
+      <div class="who">
+        <span>${p.name||p.email||'কর্মচারী'} ${isAdm?'<span class="adm">admin</span>':''}${isMe?' <span style="color:var(--muted);font-weight:500;font-size:12px">(আপনি)</span>':''}</span>
+        <span class="pill adm ${isAdm?'on':''}" data-id="${p.id}" data-f="role" data-v="${isAdm?'staff':'admin'}">admin ${isAdm?'✓':'✗'}</span>
+      </div>
+      ${isAdm?'<div class="note-inline">admin দুই ব্যবসার সব কিছু পায় — আলাদা টগল লাগে না।</div>':`
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin:8px 0 5px">Aqua Purify BD</div>
+        <div class="perm">${grp('aqua')}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 5px">Redbox</div>
+        <div class="perm">${grp('redbox')}</div>
+        <div style="font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 5px">YAQQEN</div>
+        <div class="perm">${grp('yeaqqen')}</div>`}
+    </div>`;
+  }).join('');
+}
+function nameById(uid){
+  if(!uid) return '—';
+  const p=PROFILES.find(x=>x.id===uid);
+  return p ? (p.name||p.email||'কর্মচারী') : '—';
+}
+function whenStr(ts){
+  if(!ts) return '';
+  const d=new Date(ts);
+  const t=d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true});
+  return `${niceDate(d.toLocaleDateString('en-CA'))} · ${t}`;
+}
+function renderLog(){
+  const box=$('logList'); if(!box) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')){ box.innerHTML=''; return; }
+  const rows=[];
+  SALES.forEach(s=>rows.push({ when:s.created_at, by:s.created_by, tag:'বিক্রি', color:'oh',
+    desc:`${s.product} · ${s.qty} পিস · ${money(n(s.qty)*n(s.unit_price))}`, d:s.sale_date }));
+  RETURNS.forEach(r=>rows.push({ when:r.created_at, by:r.created_by, tag:'রিটার্ন', color:'ot',
+    desc:`${r.product} · ${r.qty} পিস · মূল ${niceDate(r.original_sale_date)}`, d:r.return_date }));
+  EXPENSES.forEach(e=>rows.push({ when:e.created_at, by:e.created_by, tag:'খরচ', color:'ot',
+    desc:`${e.category||'খরচ'} · ${money(n(e.amount))}`, d:e.expense_date }));
+  rows.sort((a,b)=> new Date(b.when||b.d) - new Date(a.when||a.d));
+  if(!rows.length){ box.innerHTML='<div class="empty">এখনো কোনো কার্যক্রম নেই।</div>'; return; }
+  box.innerHTML=rows.slice(0,60).map(x=>`<div class="item"><div>
+      <div class="t">${nameById(x.by)} <span class="badge ${x.color}">${x.tag}</span></div>
+      <div class="m">${x.desc}</div>
+    </div><div style="text-align:right">
+      <div class="m">${whenStr(x.when)}</div>
+    </div></div>`).join('');
+}
+function stockByProduct(){
+  const map={};
+  const ensure=p=>{ if(!map[p]) map[p]={inQty:0,inCost:0,sold:0,ret:0}; return map[p]; };
+  BIZ[CURRENT_BIZ].products.forEach(ensure);
+  STOCK.forEach(s=>{ const m=ensure(s.product); m.inQty+=n(s.qty); m.inCost+=n(s.qty)*n(s.unit_cost); });
+  SALES.forEach(s=>{ ensure(s.product).sold+=n(s.qty); });
+  RETURNS.forEach(r=>{ if(n(r.unit_product_cost)<=0) ensure(r.product).ret+=n(r.qty); });
+  const rows=[]; let totalVal=0;
+  Object.keys(map).forEach(p=>{ const m=map[p]; const cur=m.inQty+m.ret-m.sold; const avg=m.inQty>0?m.inCost/m.inQty:0; const val=cur*avg; totalVal+=val; rows.push({product:p,cur,avg,val}); });
+  return {rows,totalVal};
+}
+function renderStock(){
+  const box=$('stockList'); if(!box) return;
+  const {rows,totalVal}=stockByProduct();
+  const tt=$('stockTotal'); if(tt) tt.textContent=money(totalVal);
+  box.innerHTML = rows.length ? rows.map(x=>`<div class="item"><div>
+      <div class="t">${x.product}</div>
+      <div class="m">গড় দাম ${money(x.avg)} · মূল্য ${money(x.val)}</div>
+    </div><div style="text-align:right">
+      <div class="amt ${x.cur<0?'neg':''}">${x.cur} পিস</div>
+    </div></div>`).join('') : '<div class="empty">কোনো প্রোডাক্ট নেই।</div>';
+}
+function renderStockIn(){
+  const box=$('stockInList'); if(!box) return;
+  if(!STOCK.length){ box.innerHTML='<div class="empty">এখনো কোনো স্টক যোগ নেই।</div>'; return; }
+  const d=($('stockInDate')?$('stockInDate').value:'');
+  const list = d ? STOCK.filter(s=>s.stock_date===d) : STOCK;
+  const shown = d ? list : list.slice(0,20);
+  let head='';
+  if(d){ let tQty=0,tVal=0; list.forEach(s=>{ tQty+=n(s.qty); tVal+=n(s.qty)*n(s.unit_cost); }); head=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট <b>${tQty} পিস</b> · মূল্য <b>${money(tVal)}</b></div>`; }
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো স্টক যোগ নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(s=>`<div class="item"><div>
+      <div class="t">${s.product} · ${s.qty} পিস</div>
+      <div class="m">${niceDate(s.stock_date)} · প্রতি পিস ${money(n(s.unit_cost))}${s.note?' · '+s.note:''}</div>
+    </div><div style="text-align:right">
+      <div class="amt">${money(n(s.qty)*n(s.unit_cost))}</div>
+      <button class="del" data-t="hisab_stock" data-id="${s.id}">মুছুন</button>
+    </div></div>`).join('');
+}
+function renderCash(){
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const accs=['Bank','bKash','Cash'];
+  const inSum={}, outSum={};
+  accs.forEach(a=>{ inSum[a]=0; outSum[a]=0; });
+  CASHIN.forEach(c=>{ const a=c.account||'Cash'; if(inSum[a]===undefined) inSum[a]=0; inSum[a]+=n(c.amount); });
+  EXPENSES.forEach(e=>{ const a=e.account||'Cash'; if(outSum[a]===undefined) outSum[a]=0; outSum[a]+=n(e.amount); });
+  const bal=a=>(inSum[a]||0)-(outSum[a]||0);
+  const set=(id,v)=>{ const el=$(id); if(el){ el.textContent=money(v); el.classList.toggle('small',Math.abs(v)>=1e7);} };
+  set('balBank',bal('Bank')); set('balBkash',bal('bKash')); set('balCash',bal('Cash'));
+  set('balTotal',bal('Bank')+bal('bKash')+bal('Cash'));
+}
+function renderCashIn(){
+  const box=$('cashInList'); if(!box) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')){ box.innerHTML=''; return; }
+  if(!CASHIN.length){ box.innerHTML='<div class="empty">এখনো কোনো টাকা যোগ নেই।</div>'; return; }
+  const d=($('cashInDate')?$('cashInDate').value:'');
+  const list = d ? CASHIN.filter(c=>c.cash_date===d) : CASHIN;
+  const shown = d ? list : list.slice(0,20);
+  let head='';
+  if(d){ let tAmt=0; list.forEach(c=>tAmt+=n(c.amount)); head=`<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট টাকা যোগ <b>${money(tAmt)}</b> · <b>${list.length}টি</b></div>`; }
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো টাকা যোগ নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(c=>`<div class="item"><div>
+      <div class="t">${c.account} <span class="badge oh">টাকা যোগ</span></div>
+      <div class="m">${niceDate(c.cash_date)}${c.note?' · '+c.note:''}</div>
+    </div><div style="text-align:right">
+      <div class="amt pos">+${money(n(c.amount))}</div>
+      <button class="del" data-t="hisab_cashin" data-id="${c.id}">মুছুন</button>
+    </div></div>`).join('');
+}
+function renderSalary(){
+  const isAdmin=CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin';
+  const empBox=$('empList'), salBox=$('salList'), sel=$('sal_emp');
+  if(!isAdmin){ if(empBox)empBox.innerHTML=''; if(salBox)salBox.innerHTML=''; return; }
+  if(sel){ const v=sel.value; sel.innerHTML='<option value="">— বাছুন —</option>'+EMPLOYEES.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); sel.value=v; }
+  if(empBox){ empBox.innerHTML = EMPLOYEES.length ? EMPLOYEES.map(e=>`<div class="item"><div>
+      <div class="t">${e.name}</div>
+      <div class="m">${e.join_date?'জয়েন '+niceDate(e.join_date)+' · ':''}বেতন ${money(n(e.monthly_salary))}${e.note?' · '+e.note:''}</div>
+    </div><div style="text-align:right"><button class="del" data-t="hisab_employees" data-id="${e.id}">মুছুন</button></div></div>`).join('') : '<div class="empty">এখনো কোনো কর্মচারী নেই।</div>'; }
+  if(salBox){ salBox.innerHTML = SALARY.length ? SALARY.slice(0,30).map(s=>`<div class="item"><div>
+      <div class="t">${s.emp_name||''} · ${niceMonth(s.pay_month)}</div>
+      <div class="m">বেতন ${money(n(s.salary))} + বোনাস ${money(n(s.bonus))} − অগ্রিম ${money(n(s.advance))}${s.note?' · '+s.note:''}</div>
+    </div><div style="text-align:right">
+      <div class="amt pos">${money(n(s.net))}</div>
+      <button class="del" data-t="hisab_salary" data-id="${s.id}">মুছুন</button>
+    </div></div>`).join('') : '<div class="empty">এখনো কোনো বেতন রেকর্ড নেই।</div>'; }
+}
+/* ================= ড্যাশবোর্ড ================= */
+let DASH_RANGE='today';
+function dashDates(){
+  const today=todayStr();
+  if(DASH_RANGE==='month') return {from:monthStr()+'-01', to:today};
+  if(DASH_RANGE==='custom'){ const f=($('dash_from')?$('dash_from').value:''), t=($('dash_to')?$('dash_to').value:''); return {from:f||today, to:t||today}; }
+  return {from:today, to:today};
+}
+function dayRange(from,to){ const out=[]; if(!from||!to||from>to) return out; let d=new Date(from+'T00:00:00'); const end=new Date(to+'T00:00:00'); let g=0; while(d<=end && g<400){ out.push(d.toLocaleDateString('en-CA')); d.setDate(d.getDate()+1); g++; } return out; }
+function dashSum(from,to){
+  const days=dayRange(from,to);
+  const a={revenue:0,directCost:0,opCost:0,adCost:0,returnLoss:0,oneTime:0,net:0,parcels:0,orders:0};
+  days.forEach(d=>{ const r=calcDay(d); for(const k in a) a[k]+=(r[k]||0); });
+  return a;
+}
+function dashTile(label,val,color,sub){ return `<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
+  <div style="font-size:12.5px;color:var(--muted);font-weight:500">${label}</div>
+  <div class="num" style="font-size:21px;font-weight:700;margin-top:3px;color:${color||'var(--ink)'}">${val}</div>
+  ${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div>`; }
+function dashGrid(inner){ return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px">${inner}</div>`; }
+function dashBars(obj){
+  const keys=Object.keys(obj).filter(k=>obj[k]>0).sort((x,y)=>obj[y]-obj[x]).slice(0,8);
+  if(!keys.length) return '<div class="empty">কোনো তথ্য নেই।</div>';
+  const max=Math.max(...keys.map(k=>obj[k]))||1;
+  return keys.map(k=>`<div style="margin:9px 0">
+    <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${k}</span><span class="num" style="font-weight:600">${money(obj[k])}</span></div>
+    <div class="dbar-track"><div class="dbar" style="width:${Math.max(3,obj[k]/max*100)}%"></div></div>
+  </div>`).join('');
+}
+function dashLineSvg(data){
+  const W=640,H=210,pad=30,padT=14,padB=26, n0=data.length;
+  const xs=n0>1?(W-pad-8)/(n0-1):0;
+  const vals=data.flatMap(p=>[p.sales,p.net]);
+  const max=Math.max(1,...vals), min=Math.min(0,...vals), span=(max-min)||1;
+  const x=i=>pad+i*xs, y=v=>padT+(H-padT-padB)-((v-min)/span)*(H-padT-padB);
+  const path=key=>data.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(p[key]).toFixed(1)}`).join(' ');
+  const dots=(key,c)=>data.map((p,i)=>`<circle cx="${x(i).toFixed(1)}" cy="${y(p[key]).toFixed(1)}" r="2.3" fill="${c}"/>`).join('');
+  const step=Math.max(1,Math.ceil(n0/7));
+  const xl=data.map((p,i)=>(i%step===0||i===n0-1)?`<text x="${x(i).toFixed(1)}" y="${H-7}" font-size="9" text-anchor="middle" fill="var(--muted)">${p.d.slice(5)}</text>`:'').join('');
+  return `<div style="overflow-x:auto"><svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:420px;height:auto;display:block">
+    <line x1="${pad}" y1="${y(0).toFixed(1)}" x2="${W-5}" y2="${y(0).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>
+    <path d="${path('sales')}" fill="none" stroke="var(--primary)" stroke-width="2"/>
+    <path d="${path('net')}" fill="none" stroke="var(--profit)" stroke-width="2"/>
+    ${dots('sales','var(--primary)')}${dots('net','var(--profit)')}${xl}
+  </svg>
+  <div style="display:flex;gap:16px;justify-content:center;font-size:12px;color:var(--muted);margin-top:4px">
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--primary);border-radius:50%;margin-right:4px"></span>বিক্রি</span>
+    <span><span style="display:inline-block;width:10px;height:10px;background:var(--profit);border-radius:50%;margin-right:4px"></span>নিট লাভ</span>
+  </div></div>`;
+}
+function renderDash(){
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  if(!$('dashCards')) return;
+  const {from,to}=dashDates();
+  const a=dashSum(from,to);
+  $('dashRangeLbl').textContent = (from===to?niceDate(from):niceDate(from)+' — '+niceDate(to)) + ' · ' + BIZ[CURRENT_BIZ].label;
+  const totalCost=a.directCost+a.opCost+a.adCost+a.oneTime;
+  $('dashCards').innerHTML=dashGrid(
+    dashTile('মোট বিক্রি',money(a.revenue))+
+    dashTile('নিট লাভ',money(a.net), a.net>=0?'var(--profit)':'var(--loss)')+
+    dashTile('মোট খরচ',money(totalCost),'var(--loss)','পণ্য+প্যাক+ডেলি+অপা+Ad+এককালীন')+
+    dashTile('রিটার্ন লস',money(a.returnLoss),'var(--loss)')+
+    dashTile('অর্ডার',a.orders+' টি')+
+    dashTile('পার্সেল',a.parcels+' পিস')+
+    dashTile('জোন চেঞ্জ', ZONE.filter(z=>z.status==='done' && (z.change_date||'')>=from && (z.change_date||'')<=to).length+' টি','var(--ink)','ঐ সময়ে সম্পন্ন')+
+    dashTile('ওয়েটিং-এ', ZONE.filter(z=>z.status!=='done').length+' টি','var(--loss)','বর্তমান ব্যাকলগ')
+  );
+  const accs=['Bank','bKash','Cash'], inSum={}, outSum={};
+  accs.forEach(x=>{inSum[x]=0;outSum[x]=0;});
+  CASHIN.forEach(c=>{const x=c.account||'Cash';inSum[x]=(inSum[x]||0)+n(c.amount);});
+  EXPENSES.forEach(e=>{const x=e.account||'Cash';outSum[x]=(outSum[x]||0)+n(e.amount);});
+  const bal=x=>(inSum[x]||0)-(outSum[x]||0);
+  const stk=stockByProduct();
+  $('dashBalance').innerHTML=dashGrid(
+    dashTile('ব্যাংক',money(bal('Bank')),'var(--primary)')+
+    dashTile('bKash',money(bal('bKash')),'var(--primary)')+
+    dashTile('Cash',money(bal('Cash')),'var(--primary)')+
+    dashTile('মোট ব্যালেন্স',money(bal('Bank')+bal('bKash')+bal('Cash')),'var(--primary)')+
+    dashTile('স্টকে মাল',money(stk.totalVal),'var(--ink)','বর্তমান মূল্য')
+  );
+  let cfrom=from, cto=to;
+  if(DASH_RANGE==='today'){ const d=new Date(to+'T00:00:00'); d.setDate(d.getDate()-13); cfrom=d.toLocaleDateString('en-CA'); }
+  const cdays=dayRange(cfrom,cto).slice(-31);
+  const series=cdays.map(d=>{ const r=calcDay(d); return {d, sales:r.revenue, net:r.net}; });
+  $('dashChart').innerHTML = series.length ? dashLineSvg(series) : '<div class="empty">ডেটা নেই।</div>';
+  const eg={}; EXPENSES.forEach(e=>{ if(e.expense_date>=from&&e.expense_date<=to){ const k=e.category||'অন্যান্য'; eg[k]=(eg[k]||0)+n(e.amount);} });
+  $('dashExpBreak').innerHTML=dashBars(eg);
+  const pg={}; SALES.forEach(s=>{ if(s.sale_date>=from&&s.sale_date<=to){ pg[s.product]=(pg[s.product]||0)+n(s.qty)*n(s.unit_price);} });
+  $('dashProdBreak').innerHTML=dashBars(pg);
+}
+document.querySelectorAll('.rbtn').forEach(b=>{ b.onclick=()=>{
+  document.querySelectorAll('.rbtn').forEach(x=>x.classList.toggle('active',x===b));
+  DASH_RANGE=b.dataset.r;
+  const dc=$('dashCustom'); if(dc) dc.style.display = DASH_RANGE==='custom' ? 'flex' : 'none';
+  if(DASH_RANGE==='custom'){ if($('dash_from')&&!$('dash_from').value) $('dash_from').value=monthStr()+'-01'; if($('dash_to')&&!$('dash_to').value) $('dash_to').value=todayStr(); }
+  renderDash();
+};});
+['dash_from','dash_to'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderDash); });
+
+/* ================= এজেন্ট (কল সেন্টার) ================= */
+function renderAgent(){
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const box=$('agentPerf'); if(!box) return;
+  if($('agentDate')&&!$('agentDate').value) $('agentDate').value=todayStr();
+  const d=($('agentDate')?$('agentDate').value:'')||todayStr();
+  const day=CCORDERS.filter(o=>o.confirm_date===d);
+  const by={};
+  day.forEach(o=>{ const a=o.agent_name||'—'; by[a]=by[a]||{conf:0,deliv:0,canc:0,comm:0};
+    by[a].conf++;
+    if(o.status==='Delivered'){ by[a].deliv++; if(o.is_upsell) by[a].comm+=5; }
+    if(o.status==='Cancelled') by[a].canc++;
+  });
+  const names=Object.keys(by).sort((x,y)=>by[y].conf-by[x].conf);
+  let tC=0,tD=0,tX=0,tM=0; names.forEach(a=>{tC+=by[a].conf;tD+=by[a].deliv;tX+=by[a].canc;tM+=by[a].comm;});
+  let html=`<div class="infobar">${niceDate(d)} — মোট কনফার্ম <b>${tC}</b> · ডেলিভারড <b>${tD}</b> · ক্যান্সেল <b>${tX}</b> · কমিশন <b>${money(tM)}</b></div>`;
+  html += names.length ? names.map(a=>`<div class="item"><div>
+      <div class="t">${a}</div>
+      <div class="m">কনফার্ম ${by[a].conf} · ডেলিভারড ${by[a].deliv} · ক্যান্সেল ${by[a].canc}</div>
+    </div><div style="text-align:right">
+      <div class="amt">${by[a].conf} কনফার্ম</div>
+      <div class="m">কমিশন ${money(by[a].comm)}</div>
+    </div></div>`).join('') : '<div class="empty">এই দিনে কোনো অর্ডার কনফার্ম হয়নি।</div>';
+  box.innerHTML=html;
+  renderAgentAccess();
+}
+function renderAgentAccess(){
+  const box=$('agentAccess'); if(!box) return;
+  if(!PROFILES.length){ box.innerHTML='<div class="empty">কোনো কর্মচারী নেই। Supabase → Authentication থেকে যোগ হলে এখানে আসবে।</div>'; return; }
+  const roles=[['none','কিছু না'],['agent','agent'],['leader','leader'],['admin','admin']];
+  box.innerHTML=PROFILES.map(p=>{
+    const cur=p.cc_role||'none';
+    const pills=roles.map(r=>`<span class="pill ccrole ${r[0]===cur?'on':''}" data-id="${p.id}" data-crole="${r[0]}">${r[1]}</span>`).join(' ');
+    return `<div class="arow"><div class="who"><span>${p.name||p.email||'কর্মচারী'}</span></div><div class="perm">${pills}</div></div>`;
+  }).join('');
+}
+document.addEventListener('click',async(ev)=>{
+  const pill=ev.target.closest('.pill.ccrole'); if(!pill) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const id=pill.dataset.id, crole=pill.dataset.crole;
+  const {error}=await db.from('profiles').update({cc_role:crole}).eq('id',id);
+  if(error){ toast('বদলানো যায়নি: '+(error.message||''),true); return; }
+  toast('কল সেন্টার role আপডেট হয়েছে ✓');
+  const pr=await db.from('profiles').select('*').order('created_at',{ascending:true});
+  PROFILES=pr.data||PROFILES; renderAgentAccess();
+});
+const _agd=$('agentDate'); if(_agd) _agd.addEventListener('change',renderAgent);
+
+/* ================= জোন চেঞ্জ (ওয়েটিং → সম্পন্ন) ================= */
+const zIsDone = z => z.status==='done';
+const zDateOf = z => z.entry_date || z.zc_date || '';   // পুরনো রো-র সাথে মানানসই
+function renderZone(){ renderZoneSummary(); renderZoneWait(); renderZoneDone(); }
+function renderZoneSummary(){
+  const wait=ZONE.filter(z=>z.status!=='done').length;
+  const today=todayStr(), mon=monthStr();
+  const doneToday=ZONE.filter(z=>z.status==='done' && (z.change_date||'')===today).length;
+  const doneMonth=ZONE.filter(z=>z.status==='done' && (z.change_date||'').slice(0,7)===mon).length;
+  if($('zsWait')) $('zsWait').textContent=wait+' টি';
+  if($('zsToday')) $('zsToday').textContent=doneToday+' টি';
+  if($('zsMonth')) $('zsMonth').textContent=doneMonth+' টি';
+  const d=$('zoneSumDate')?$('zoneSumDate').value:'';
+  const box=$('zsByDate'); if(box){
+    if(!d){ box.textContent='একটা তারিখ বাছুন'; }
+    else {
+      const chg=ZONE.filter(z=>z.status==='done' && (z.change_date||'')===d).length;
+      const added=ZONE.filter(z=>(z.entry_date||z.zc_date||'')===d).length;
+      box.innerHTML=`${niceDate(d)} — জোন চেঞ্জ <b>${chg}টি</b> · ওয়েটিং যোগ <b>${added}টি</b>`;
+    }
+  }
+}
+{ const zsd=$('zoneSumDate'); if(zsd) zsd.addEventListener('change',renderZoneSummary); }
+function renderZoneWait(){
+  const box=$('zoneWaitList'); if(!box) return;
+  const list=ZONE.filter(z=>!zIsDone(z)).sort((a,b)=>(zDateOf(b)).localeCompare(zDateOf(a)));
+  if(!list.length){ box.innerHTML='<div class="empty">ওয়েটিং-এ কোনো পার্সেল নেই।</div>'; return; }
+  box.innerHTML=`<div class="infobar" style="margin-bottom:10px">বর্তমানে ওয়েটিং-এ <b>${list.length}টি</b> পার্সেল</div>`+list.map(z=>`<div class="item"><div>
+      <div class="t">${z.product||''} <span class="badge ot">ওয়েটিং</span></div>
+      <div class="m">${niceDate(zDateOf(z))} · ${z.first_name||''} ${z.first_number||''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+    </div><div style="text-align:right;white-space:nowrap">
+      <button class="btn ghost zc-do" data-id="${z.id}" style="width:auto;padding:7px 12px;font-size:13px">জোন চেঞ্জ করুন</button>
+      <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
+    </div></div>`).join('');
+}
+function renderZoneDone(){
+  const box=$('zoneDoneList'); if(!box) return;
+  const done=ZONE.filter(zIsDone);
+  if(!done.length){ box.innerHTML='<div class="empty">এখনো কোনো জোন চেঞ্জ হয়নি।</div>'; return; }
+  const d=($('zoneDate')?$('zoneDate').value:'');
+  const list = d ? done.filter(z=>(z.change_date||'')===d) : done.sort((a,b)=>(b.change_date||'').localeCompare(a.change_date||''));
+  const shown = d ? list : list.slice(0,20);
+  let head = d ? `<div class="infobar" style="margin-bottom:10px">${niceDate(d)} — মোট <b>${list.length}টি</b> জোন চেঞ্জ</div>` : '';
+  if(d && !list.length){ box.innerHTML=head+'<div class="empty">এই তারিখে কোনো জোন চেঞ্জ নেই।</div>'; return; }
+  box.innerHTML=head+shown.map(z=>`<div class="item"><div>
+      <div class="t">${z.product||''} <span class="badge oh">জোন চেঞ্জ</span></div>
+      <div class="m">${niceDate(z.change_date||zDateOf(z))} · ${z.first_number||''} → ${z.second_name||''} ${z.second_number||''}${z.location?' · '+z.location:''}${z.parcel_id?' · আইডি '+z.parcel_id:''}</div>
+    </div><div style="text-align:right">
+      <button class="del" data-t="zone_changes" data-id="${z.id}">মুছুন</button>
+    </div></div>`).join('');
+}
+{ const zd=$('zoneDate'); if(zd) zd.addEventListener('change',renderZoneDone); }
+if($('z_save')) $('z_save').onclick=async()=>{
+  const b=$('z_save');
+  const rec={ status:'waiting', entry_date:$('z_date').value, product:$('z_product').value,
+    first_name:$('z_fname').value.trim()||null, first_number:$('z_first').value.trim(),
+    location:$('z_loc').value.trim()||null, parcel_id:$('z_parcel').value.trim()||null,
+    business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
+  if(!rec.entry_date||!rec.first_number){ toast('তারিখ ও কাস্টমার নম্বর দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('zone_changes').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['z_fname','z_first','z_loc','z_parcel'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  toast('ওয়েটিং লিস্টে যোগ হয়েছে ✓'); await loadAll();
+};
+/* জোন চেঞ্জ মডাল */
+let ZC_ID=null;
+document.addEventListener('click',ev=>{ const b=ev.target.closest('.zc-do'); if(!b) return;
+  const z=ZONE.find(x=>String(x.id)===String(b.dataset.id)); if(!z) return;
+  ZC_ID=z.id;
+  $('zcInfo').innerHTML=`<b>${z.product||''}</b> · ${z.first_name||''} ${z.first_number||''}${z.location?' · '+z.location:''}${z.parcel_id?'<br>কুরিয়ার আইডি: '+z.parcel_id:''}`;
+  $('zc_name').value=''; $('zc_num').value='';
+  $('zcModal').classList.add('show');
+});
+if($('zcClose')) $('zcClose').onclick=()=>$('zcModal').classList.remove('show');
+if($('zcModal')) $('zcModal').addEventListener('click',e=>{ if(e.target===$('zcModal')) $('zcModal').classList.remove('show'); });
+if($('zcConfirm')) $('zcConfirm').onclick=async()=>{
+  if(!ZC_ID) return;
+  const name=$('zc_name').value.trim(), num=$('zc_num').value.trim();
+  if(!num){ toast('নতুন কাস্টমার নম্বর দিন',true); return; }
+  const b=$('zcConfirm'); b.disabled=true;
+  const {error}=await db.from('zone_changes').update({ status:'done', second_name:name||null, second_number:num, change_date:todayStr() }).eq('id',ZC_ID);
+  b.disabled=false;
+  if(error){ toast('হয়নি: '+(error.message||''),true); return; }
+  $('zcModal').classList.remove('show'); ZC_ID=null;
+  toast('জোন চেঞ্জ সম্পন্ন ✓'); await loadAll();
+};
+
+function renderAll(){ renderDash(); renderAgent(); renderZone(); renderSummary(); renderProducts(); renderSalesList(); renderReturnsList(); renderExpensesList(); renderStock(); renderStockIn(); renderCash(); renderCashIn(); renderSalary(); renderDaily(); renderMonthly(); renderAdmin(); renderDelReqs(); renderNotif(); renderLog(); }
+
+/* ---------- অ্যাডমিন: অ্যাক্সেস টগল ---------- */
+document.addEventListener('click',async(ev)=>{
+  const pill=ev.target.closest('.pill'); if(!pill) return;
+  if(!pill.dataset.f) return; // শুধু অ্যাক্সেস টগল, রেঞ্জ পিল নয়
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const id=pill.dataset.id, f=pill.dataset.f; let v=pill.dataset.v;
+  if(f==='role'){ // admin বানানো/সরানো
+    if(!confirm(v==='admin'?'এই ব্যক্তিকে admin বানাবেন? admin সব কিছু দেখতে ও করতে পারবে (রিপোর্টসহ)।':'admin ক্ষমতা সরিয়ে নেবেন?')) return;
+  }else{ v = (v==='1'); }
+  const {error}=await db.from('profiles').update({[f]:v}).eq('id',id);
+  if(error){ toast('বদলানো যায়নি: '+(error.message||''),true); return; }
+  toast('আপডেট হয়েছে ✓');
+  const pr=await db.from('profiles').select('*').order('created_at',{ascending:true});
+  PROFILES=pr.data||PROFILES; renderAdmin();
+});
+
+/* ---------- ট্যাব ---------- */
+document.querySelectorAll('.tab').forEach(t=>{ t.onclick=()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active'); $('panel-'+t.dataset.tab).classList.add('active');
+  const tt=$('tbTitle'); if(tt) tt.textContent=(t.textContent||'').trim();
+  if(t.dataset.tab==='dash') renderDash();
+  if(t.dataset.tab==='agent') renderAgent();
+  if(t.dataset.tab==='zone'){ if($('z_date')&&!$('z_date').value) $('z_date').value=todayStr(); renderZone(); }
+  sidebarToggle(false);
+};});
+function sidebarToggle(open){ const sb=$('sidebar'), ov=$('sideovl'); if(!sb) return; const show = (open===undefined)? !sb.classList.contains('open') : open; sb.classList.toggle('open',show); if(ov) ov.classList.toggle('show',show); }
+{ const hb=$('hamb'); if(hb) hb.onclick=()=>sidebarToggle(); const ov=$('sideovl'); if(ov) ov.onclick=()=>sidebarToggle(false); }
+
+/* ---------- প্রোডাক্ট বাছলে আগের খরচ অটো-ফিল ---------- */
+$('s_product').addEventListener('change',()=>{
+  const name=$('s_product').value.trim();
+  const last=SALES.find(s=>s.product===name); if(!last) return;
+  if(!$('s_price').value) $('s_price').value=last.unit_price;
+  if(!$('s_pc').value) $('s_pc').value=last.unit_product_cost;
+  if(!$('s_pk').value) $('s_pk').value=last.unit_packaging;
+  if(!$('s_dl').value) $('s_dl').value=last.unit_delivery;
+});
+
+/* ---------- সেভ: বিক্রি ---------- */
+$('s_save').onclick=async()=>{
+  const b=$('s_save');
+  const qty=parseInt($('s_qty').value);
+  const ordersVal = $('s_orders').value.trim()==='' ? qty : parseInt($('s_orders').value);
+  const rec={ sale_date:$('s_date').value, product:finalProduct($('s_product').value.trim(),'s_color','s_colorM'), qty:qty,
+    order_count: (isNaN(ordersVal)?qty:ordersVal),
+    unit_price:n($('s_price').value), unit_product_cost:n($('s_pc').value),
+    unit_operation_cost:0, unit_packaging:n($('s_pk').value), unit_delivery:n($('s_dl').value), unit_cpa:0, note:$('s_note').value.trim()||null, business:CURRENT_BIZ, created_by: CURRENT_USER?.id || null };
+  if(!rec.sale_date||!rec.product||!rec.qty){ toast('তারিখ, প্রোডাক্ট ও পিস দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_sales').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['s_product','s_qty','s_orders','s_price','s_pc','s_pk','s_dl','s_note','s_color','s_colorM'].forEach(id=>{const el=$(id);if(el)el.value='';}); if($('s_colorMF'))$('s_colorMF').style.display='none';
+  toast('বিক্রি যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- সেভ: রিটার্ন ---------- */
+$('r_save').onclick=async()=>{
+  const b=$('r_save');
+  const product=finalProduct($('r_product').value.trim(),'r_color','r_colorM'), odate=$('r_odate').value, qty=parseInt($('r_qty').value), damaged=$('r_damaged').checked;
+  if(!$('r_rdate').value||!odate||!$('r_product').value.trim()||!qty){ toast('সব ঘর পূরণ করুন',true); return; }
+  const info=saleUnitInfo(product,odate);
+  if(!info){ toast('ঐ তারিখে এই প্রোডাক্টের বিক্রি খুঁজে পাইনি — মূল তারিখ ঠিক আছে তো?',true); return; }
+  const rec={ return_date:$('r_rdate').value, original_sale_date:odate, product, qty,
+    unit_product_cost: damaged?info.pc:0, unit_operation_cost:0, unit_packaging:0, unit_delivery:0, unit_cpa:0, business:CURRENT_BIZ, created_by: CURRENT_USER?.id || null };
+  b.disabled=true; const {error}=await db.from('hisab_returns').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['r_product','r_qty','r_color','r_colorM'].forEach(id=>{const el=$(id);if(el)el.value='';}); if($('r_colorMF'))$('r_colorMF').style.display='none'; $('r_damaged').checked=false;
+  toast('রিটার্ন যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- সেভ: খরচ ---------- */
+$('e_save').onclick=async()=>{
+  const b=$('e_save');
+  const rec={ expense_date:$('e_date').value, category:$('e_cat').value.trim()||'খরচ', amount:n($('e_amt').value),
+    kind:$('e_kind').value, note:$('e_note').value.trim()||null, account:$('e_acc').value, business:CURRENT_BIZ, created_by: CURRENT_USER?.id || null };
+  if(!rec.expense_date||!rec.amount){ toast('তারিখ ও টাকা দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_expenses').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  $('e_amt').value=''; $('e_note').value=''; $('e_cat').value='';
+  toast('খরচ যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- সেভ: স্টক যোগ ---------- */
+$('st_save').onclick=async()=>{
+  const b=$('st_save');
+  const rec={ stock_date:$('st_date').value, product:finalProduct($('st_product').value,'st_color','st_colorM'), qty:parseInt($('st_qty').value),
+    unit_cost:n($('st_cost').value), note:$('st_note').value.trim()||null, business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
+  if(!rec.stock_date||!rec.product||!rec.qty){ toast('তারিখ, প্রোডাক্ট ও পিস দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_stock').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['st_qty','st_cost','st_note','st_color','st_colorM'].forEach(id=>{const el=$(id);if(el)el.value='';}); if($('st_colorMF'))$('st_colorMF').style.display='none';
+  toast('স্টক যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- সেভ: টাকা যোগ (ক্যাশ) ---------- */
+$('ci_save').onclick=async()=>{
+  const b=$('ci_save');
+  const rec={ cash_date:$('ci_date').value, account:$('ci_acc').value, amount:n($('ci_amt').value),
+    note:$('ci_note').value.trim()||null, business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
+  if(!rec.cash_date||!rec.amount){ toast('তারিখ ও টাকা দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_cashin').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  $('ci_amt').value=''; $('ci_note').value='';
+  toast('টাকা যোগ হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- বেতন ---------- */
+$('emp_save').onclick=async()=>{
+  const b=$('emp_save');
+  const rec={ name:$('emp_name').value.trim(), join_date:$('emp_join').value||null,
+    monthly_salary:n($('emp_salary').value), note:$('emp_note').value.trim()||null };
+  if(!rec.name){ toast('নাম দিন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_employees').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['emp_name','emp_join','emp_salary','emp_note'].forEach(id=>$(id).value='');
+  toast('কর্মচারী যোগ হয়েছে ✓'); await loadAll();
+};
+function salNet(){ const net=n($('sal_amount').value)+n($('sal_bonus').value)-n($('sal_adv').value); $('sal_net').textContent='হাতে পাবে: '+money(net); return net; }
+['sal_amount','sal_bonus','sal_adv'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',salNet); });
+$('sal_emp').addEventListener('change',()=>{ const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value); if(e && !$('sal_amount').value){ $('sal_amount').value=e.monthly_salary; salNet(); } });
+$('sal_save').onclick=async()=>{
+  const b=$('sal_save');
+  const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value);
+  if(!e){ toast('কর্মচারী বাছুন',true); return; }
+  const rec={ emp_name:e.name, pay_month:$('sal_month').value, salary:n($('sal_amount').value),
+    advance:n($('sal_adv').value), bonus:n($('sal_bonus').value), net:salNet(),
+    paid_date:$('sal_date').value||null, note:$('sal_note').value.trim()||null };
+  if(!rec.pay_month){ toast('মাস বাছুন',true); return; }
+  b.disabled=true; const {error}=await db.from('hisab_salary').insert(rec); b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  ['sal_amount','sal_bonus','sal_adv','sal_note'].forEach(id=>$(id).value=''); salNet();
+  toast('বেতন রেকর্ড হয়েছে ✓'); await loadAll();
+};
+
+/* ---------- মুছে ফেলা / মোছার অনুরোধ ---------- */
+function describeRow(table,id){
+  id=String(id);
+  if(table==='hisab_sales'){ const s=SALES.find(x=>String(x.id)===id); return s?`বিক্রি: ${s.product} · ${s.qty} পিস · ${niceDate(s.sale_date)}`:'বিক্রি এন্ট্রি'; }
+  if(table==='hisab_returns'){ const r=RETURNS.find(x=>String(x.id)===id); return r?`রিটার্ন: ${r.product} · ${r.qty} পিস · মূল ${niceDate(r.original_sale_date)}`:'রিটার্ন এন্ট্রি'; }
+  if(table==='hisab_expenses'){ const e=EXPENSES.find(x=>String(x.id)===id); return e?`খরচ: ${e.category||''} · ${money(n(e.amount))} · ${niceDate(e.expense_date)}`:'খরচ এন্ট্রি'; }
+  if(table==='hisab_stock'){ const s=STOCK.find(x=>String(x.id)===id); return s?`স্টক: ${s.product} · ${s.qty} পিস · ${niceDate(s.stock_date)}`:'স্টক এন্ট্রি'; }
+  if(table==='hisab_cashin'){ const c=CASHIN.find(x=>String(x.id)===id); return c?`টাকা যোগ: ${c.account} · ${money(n(c.amount))} · ${niceDate(c.cash_date)}`:'ক্যাশ এন্ট্রি'; }
+  if(table==='zone_changes'){ const z=ZONE.find(x=>String(x.id)===id); return z?`জোন চেঞ্জ: ${z.product||''} · ${z.first_number||''}→${z.second_number||''}`:'জোন চেঞ্জ এন্ট্রি'; }
+  return 'এন্ট্রি';
+}
+document.addEventListener('click',async(ev)=>{
+  const btn=ev.target.closest('.del'); if(!btn) return;
+  const table=btn.dataset.t, rid=btn.dataset.id, oid=btn.dataset.order;
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role==='admin';
+  if(isAdmin){
+    if(!confirm(oid?'পুরো কম্বো অর্ডারটি মুছে ফেলবেন?':'এই এন্ট্রিটি মুছে ফেলবেন?')) return;
+    let error;
+    if(oid){ ({error}=await db.from('hisab_sales').delete().eq('order_id',oid)); }
+    else { ({error}=await db.from(table).delete().eq('id',rid)); }
+    if(error){ toast('মোছা যায়নি: '+(error.message||''),true); return; }
+    toast('মুছে ফেলা হয়েছে'); await loadAll(); return;
+  }
+  // কর্মচারী → অনুরোধ
+  if(!confirm(oid?'এই কম্বো অর্ডার মোছার অনুরোধ পাঠাবেন?':'এই এন্ট্রি মোছার জন্য admin-এর কাছে অনুরোধ পাঠাবেন?')) return;
+  const descr = oid ? (btn.dataset.descr||'কম্বো অর্ডার') : describeRow(table,rid);
+  const rec={ table_name:table, row_id: oid?0:Number(rid), order_id: oid||null, business:CURRENT_BIZ, descr,
+    requested_by: CURRENT_USER?.id||null, requested_name:(CURRENT_PROFILE?.name||CURRENT_PROFILE?.email||''), status:'pending' };
+  const {error}=await db.from('delete_requests').insert(rec);
+  if(error){ toast('অনুরোধ পাঠানো যায়নি: '+(error.message||''),true); return; }
+  toast('মোছার অনুরোধ পাঠানো হয়েছে ✓ admin অনুমোদন দিলে মুছবে');
+});
+
+/* ---------- অ্যাডমিন: মোছার অনুরোধ তালিকা ---------- */
+function delReqRowHTML(d){
+  return `<div class="arow">
+      <div class="who"><span>${d.descr||'এন্ট্রি'} <span class="badge ot">${bizLabel(d.business)}</span></span></div>
+      <div class="m" style="margin:2px 0 8px">চেয়েছেন: ${d.requested_name||'কর্মচারী'} · ${whenStr(d.created_at)}</div>
+      <div class="perm">
+        <span class="pill on dr-ok" data-id="${d.id}" data-t="${d.table_name}" data-row="${d.row_id}" data-order="${d.order_id||''}">✓ অনুমোদন করে মুছুন</span>
+        <span class="pill dr-no" data-id="${d.id}">✗ বাতিল</span>
+      </div>
+    </div>`;
+}
+function editReqRowHTML(d){
+  return `<div class="arow">
+      <div class="who"><span>${d.descr||'এডিট'} <span class="badge oh">এডিট · ${bizLabel(d.business)}</span></span></div>
+      <div class="m" style="margin:2px 0 8px">চেয়েছেন: ${d.requested_name||'কর্মচারী'} · ${whenStr(d.created_at)}</div>
+      <div class="perm">
+        <span class="pill on er-ok" data-id="${d.id}">✓ অনুমোদন করে বদলান</span>
+        <span class="pill er-no" data-id="${d.id}">✗ বাতিল</span>
+      </div>
+    </div>`;
+}
+function renderDelReqs(){
+  const box=$('delReqList'); if(!box) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')){ box.innerHTML=''; return; }
+  const html=DELREQS.map(delReqRowHTML).join('')+EDITREQS.map(editReqRowHTML).join('');
+  box.innerHTML = html || '<div class="empty">কোনো অনুরোধ নেই।</div>';
+}
+function renderNotif(){
+  const isAdmin=CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin';
+  const btn=$('notifBtn'), badge=$('notifBadge');
+  if(btn) btn.style.display = isAdmin ? 'inline-flex' : 'none';
+  const cnt = isAdmin ? (DELREQS.length+EDITREQS.length) : 0;
+  if(badge){ badge.textContent=cnt; badge.style.display = cnt>0 ? 'inline-flex' : 'none'; }
+  const box=$('notifList'); if(!box) return;
+  const html = isAdmin ? (DELREQS.map(delReqRowHTML).join('')+EDITREQS.map(editReqRowHTML).join('')) : '';
+  box.innerHTML = html || '<div class="empty">কোনো অনুরোধ নেই।</div>';
+}
+$('ccBtn').onclick=()=>{ window.open('https://digigatebd.com/callcenter/','_blank'); };
+$('notifBtn').onclick=()=>{ renderNotif(); $('notifModal').classList.add('show'); };
+$('notifClose').onclick=()=>$('notifModal').classList.remove('show');
+$('notifModal').addEventListener('click',e=>{ if(e.target===$('notifModal')) $('notifModal').classList.remove('show'); });
+document.addEventListener('click',async(ev)=>{
+  const ok=ev.target.closest('.dr-ok'), no=ev.target.closest('.dr-no');
+  if(!ok && !no) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  if(ok){
+    if(!confirm('অনুমোদন করে এন্ট্রিটি স্থায়ীভাবে মুছে ফেলবেন?')) return;
+    if(ok.dataset.order){ await db.from('hisab_sales').delete().eq('order_id',ok.dataset.order); }
+    else { await db.from(ok.dataset.t).delete().eq('id',ok.dataset.row); }
+    await db.from('delete_requests').delete().eq('id',ok.dataset.id);
+    toast('অনুমোদন হয়েছে, মুছে ফেলা হয়েছে ✓');
+  }else{
+    await db.from('delete_requests').delete().eq('id',no.dataset.id);
+    toast('অনুরোধ বাতিল করা হয়েছে');
+  }
+  await loadAll();
+});
+
+/* ---------- রিপোর্ট তারিখ ---------- */
+$('rep_day').addEventListener('change',renderDaily);
+$('rep_month').addEventListener('change',renderMonthly);
+if($('salesDate')) $('salesDate').addEventListener('change',renderSalesList);
+if($('returnsDate')) $('returnsDate').addEventListener('change',renderReturnsList);
+if($('expensesDate')) $('expensesDate').addEventListener('change',renderExpensesList);
+if($('stockInDate')) $('stockInDate').addEventListener('change',renderStockIn);
+if($('cashInDate')) $('cashInDate').addEventListener('change',renderCashIn);
+
+/* ================= Excel Export ================= */
+let EX_RANGE='today';
+const rnd = v => Math.round(v*100)/100;
+
+function getExRange(){
+  const t=todayStr();
+  if(EX_RANGE==='today') return [t,t];
+  if(EX_RANGE==='7d'){ const d=new Date(); d.setDate(d.getDate()-6); return [d.toLocaleDateString('en-CA'), t]; }
+  if(EX_RANGE==='month') return [monthStr()+'-01', t];
+  return [ $('ex_from').value || t, $('ex_to').value || t ];
+}
+function updateExLabel(){ const [f,to]=getExRange(); const el=$('exRangeLbl'); if(el) el.textContent=`রেঞ্জ: ${niceDate(f)} — ${niceDate(to)}`; }
+
+document.addEventListener('click',ev=>{
+  const pill=ev.target.closest('.pill[data-range]'); if(!pill) return;
+  EX_RANGE=pill.dataset.range;
+  document.querySelectorAll('.pill[data-range]').forEach(x=>x.classList.toggle('on', x===pill));
+  const cr=$('customRange'); if(cr) cr.style.display = EX_RANGE==='custom' ? 'grid':'none';
+  updateExLabel();
+});
+['ex_from','ex_to'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',updateExLabel); });
+
+function eachDay(from,to,cb){
+  let d=new Date(from+'T00:00:00'); const end=new Date(to+'T00:00:00');
+  let guard=0;
+  while(d<=end && guard<2000){ cb(d.toLocaleDateString('en-CA')); d.setDate(d.getDate()+1); guard++; }
+}
+function rangeSummary(from,to){
+  const a={revenue:0,directCost:0,opCost:0,adCost:0,returnLoss:0,oneTime:0,net:0,parcels:0,orders:0};
+  eachDay(from,to,ds=>{ const r=calcDay(ds);
+    a.revenue+=r.revenue; a.directCost+=r.directCost; a.opCost+=r.opCost; a.adCost+=r.adCost;
+    a.returnLoss+=r.returnLoss; a.oneTime+=r.oneTime; a.net+=r.net; a.parcels+=r.parcels; a.orders+=r.orders; });
+  return a;
+}
+const inRange=(d,from,to)=> d>=from && d<=to;
+
+async function buildAndExport(){
+  toast('Excel তৈরি হচ্ছে…');
+  if(!(await ensureXlsx())){ toast('Excel লাইব্রেরি লোড হয়নি — ইন্টারনেট চেক করুন',true); return; }
+  const [from,to]=getExRange();
+  if(from>to){ toast('শুরুর তারিখ শেষ তারিখের পরে হতে পারে না',true); return; }
+  const want={}; document.querySelectorAll('.exchk').forEach(c=>{ if(c.checked) want[c.value]=true; });
+  if(!Object.keys(want).length){ toast('অন্তত একটা অপশন টিক দিন',true); return; }
+
+  const wb=XLSX.utils.book_new();
+  const add=(name,aoa)=>XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), name);
+
+  // ১. সারাংশ
+  if(want.summary){
+    const s=rangeSummary(from,to);
+    add('সারাংশ',[
+      ['AP Group হিসাব — সারাংশ'],
+      ['রেঞ্জ', from+' থেকে '+to],
+      [],
+      ['মোট পার্সেল (পিস)', s.parcels],
+      ['মোট অর্ডার (কতজন)', s.orders],
+      ['মোট বিক্রি', rnd(s.revenue)],
+      ['সরাসরি খরচ (পণ্য+প্যাকেজিং+ডেলিভারি)', rnd(s.directCost)],
+      ['অপারেশন কস্ট', rnd(s.opCost)],
+      ['Ad কস্ট', rnd(s.adCost)],
+      ['রিটার্ন লস', rnd(s.returnLoss)],
+      ['এককালীন বড় খরচ', rnd(s.oneTime)],
+      ['নিট লাভ', rnd(s.net)],
+    ]);
+  }
+  // ২. প্রোডাক্টভিত্তিক বিক্রি
+  if(want.byproduct){
+    const g={};
+    SALES.filter(s=>inRange(s.sale_date,from,to)).forEach(s=>{
+      const k=s.product||'—'; g[k]=g[k]||{qty:0,ord:0,rev:0,pc:0,pk:0,dl:0};
+      g[k].qty+=n(s.qty); g[k].ord+=ordOf(s); g[k].rev+=n(s.qty)*n(s.unit_price);
+      g[k].pc+=n(s.qty)*n(s.unit_product_cost); g[k].pk+=n(s.qty)*n(s.unit_packaging); g[k].dl+=delivCount(s)*n(s.unit_delivery);
+    });
+    const aoa=[['প্রোডাক্ট','পিস','অর্ডার','মোট বিক্রি','গড় দাম','প্রোডাক্ট কস্ট','প্যাকেজিং','ডেলিভারি','গ্রস লাভ']];
+    Object.keys(g).forEach(k=>{ const x=g[k]; const direct=x.pc+x.pk+x.dl;
+      aoa.push([k, x.qty, x.ord, rnd(x.rev), x.qty?rnd(x.rev/x.qty):0, rnd(x.pc), rnd(x.pk), rnd(x.dl), rnd(x.rev-direct)]); });
+    add('প্রোডাক্ট বিক্রি',aoa);
+  }
+  // ৩. দৈনিক লাভ
+  if(want.daily){
+    const aoa=[['তারিখ','পার্সেল','অর্ডার','মোট বিক্রি','সব খরচ','রিটার্ন লস','নিট লাভ']];
+    eachDay(from,to,ds=>{ const r=calcDay(ds); const cost=r.directCost+r.opCost+r.adCost+r.oneTime;
+      aoa.push([ds, r.parcels, r.orders, rnd(r.revenue), rnd(cost), rnd(r.returnLoss), rnd(r.net)]); });
+    add('দৈনিক লাভ',aoa);
+  }
+  // ৪. বিক্রির বিস্তারিত
+  if(want.sales){
+    const aoa=[['তারিখ','প্রোডাক্ট','পিস','অর্ডার','বিক্রয় মূল্য','প্রোডাক্ট কস্ট','প্যাকেজিং','ডেলিভারি','মোট বিক্রি','কে বসাল']];
+    SALES.filter(s=>inRange(s.sale_date,from,to)).forEach(s=>aoa.push([
+      s.sale_date, s.product, n(s.qty), ordOf(s), n(s.unit_price), n(s.unit_product_cost), n(s.unit_packaging), n(s.unit_delivery), rnd(n(s.qty)*n(s.unit_price)), nameById(s.created_by)]));
+    add('বিক্রি বিস্তারিত',aoa);
+  }
+  // ৫. রিটার্নের বিস্তারিত (মূল বিক্রির তারিখ রেঞ্জে)
+  if(want.returns){
+    const aoa=[['রিটার্ন তারিখ','মূল বিক্রির তারিখ','প্রোডাক্ট','পিস','ড্যামেজ','লস','কে বসাল']];
+    RETURNS.filter(r=>inRange(r.original_sale_date,from,to)).forEach(r=>{
+      const info=saleUnitInfo(r.product,r.original_sale_date); const price=info?info.price:0;
+      const damaged=n(r.unit_product_cost)>0; const pcRec=damaged?0:(info?info.pc:0);
+      const loss=n(r.qty)*(price-pcRec);
+      aoa.push([r.return_date, r.original_sale_date, r.product, n(r.qty), damaged?'হ্যাঁ':'না', rnd(loss), nameById(r.created_by)]);
+    });
+    add('রিটার্ন বিস্তারিত',aoa);
+  }
+  // ৬. খরচের বিস্তারিত
+  if(want.expenses){
+    const kindBn={overhead:'overhead',ad:'Ad',onetime:'একবার'};
+    const aoa=[['তারিখ','ধরন','খাত','টাকা','নোট','কে বসাল']];
+    EXPENSES.filter(e=>inRange(e.expense_date,from,to)).forEach(e=>aoa.push([
+      e.expense_date, kindBn[kindOf(e)]||'overhead', e.category||'', n(e.amount), e.note||'', nameById(e.created_by)]));
+    add('খরচ বিস্তারিত',aoa);
+  }
+  // ৭. খরচের সারাংশ (খাতভিত্তিক)
+  if(want.expsum){
+    const kindBn={overhead:'overhead',ad:'Ad',onetime:'একবার'};
+    const g={};
+    EXPENSES.filter(e=>inRange(e.expense_date,from,to)).forEach(e=>{
+      const key=(kindBn[kindOf(e)]||'overhead')+' · '+(e.category||'—');
+      g[key]=(g[key]||0)+n(e.amount);
+    });
+    const aoa=[['ধরন · খাত','মোট টাকা']];
+    Object.keys(g).forEach(k=>aoa.push([k, rnd(g[k])]));
+    add('খরচ সারাংশ',aoa);
+  }
+
+  XLSX.writeFile(wb, `${CURRENT_BIZ}_hisab_${from}_${to}.xlsx`);
+  toast('Excel ফাইল নামছে ✓');
+  const m=$('exportModal'); if(m) m.classList.remove('show');
+}
+$('exportBtn').onclick=buildAndExport;
+
+/* ---------- Export popup খোলা/বন্ধ ---------- */
+$('openGuide').onclick=()=>$('guideModal').classList.add('show');
+$('closeGuide').onclick=()=>$('guideModal').classList.remove('show');
+$('guideModal').addEventListener('click',e=>{ if(e.target===$('guideModal')) $('guideModal').classList.remove('show'); });
+$('openExport').onclick=()=>{ updateExLabel(); $('exportModal').classList.add('show'); };
+$('closeExport').onclick=()=>$('exportModal').classList.remove('show');
+$('exportModal').addEventListener('click',e=>{ if(e.target===$('exportModal')) $('exportModal').classList.remove('show'); });
+
+/* ================= Invoice ================= */
+function invLineHTML(){
+  return `<div class="invline" style="display:grid;grid-template-columns:1fr 60px 82px 28px;gap:8px;margin-bottom:8px;align-items:center">
+    <input type="text" class="il-name" list="invProducts" placeholder="প্রোডাক্ট">
+    <input type="number" class="il-qty" min="1" step="1" placeholder="QNT">
+    <input type="number" class="il-price" min="0" step="0.01" placeholder="দাম">
+    <button type="button" class="il-del" style="background:none;border:none;color:var(--loss);font-size:20px;cursor:pointer;padding:0">×</button>
+  </div>`;
+}
+function ensureOneLine(){ if(!$('invLines').querySelector('.invline')) $('invLines').insertAdjacentHTML('beforeend',invLineHTML()); }
+$('invAddLine').onclick=()=>$('invLines').insertAdjacentHTML('beforeend',invLineHTML());
+$('invLines').addEventListener('click',e=>{ const d=e.target.closest('.il-del'); if(!d) return;
+  const rows=$('invLines').querySelectorAll('.invline'); if(rows.length>1) d.closest('.invline').remove(); });
+
+$('openInvoice').onclick=()=>{
+  $('invLines').innerHTML=''; ensureOneLine();
+  $('inv_cname').value=''; $('inv_cphone').value=''; $('inv_caddr').value=''; $('inv_ship').value='';
+  const d=new Date();
+  $('inv_no').value='INV-'+d.toLocaleDateString('en-CA').replace(/-/g,'')+'-'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');
+  $('invoiceModal').classList.add('show');
+};
+$('closeInvoice').onclick=()=>$('invoiceModal').classList.remove('show');
+$('invoiceModal').addEventListener('click',e=>{ if(e.target===$('invoiceModal')) $('invoiceModal').classList.remove('show'); });
+
+/* ================= কম্বো অর্ডার ================= */
+function bizProductOptions(){ return '<option value="">— প্রোডাক্ট —</option>'+BIZ[CURRENT_BIZ].products.map(p=>`<option value="${p}">${p}</option>`).join(''); }
+function comboLineHTML(){
+  return `<div class="cline" style="border:1px solid var(--line);border-radius:9px;padding:10px;margin-bottom:8px">
+    <select class="cl-name" style="margin-bottom:6px">${bizProductOptions()}</select>
+    <div style="display:grid;grid-template-columns:1fr 1fr 26px;gap:6px">
+      <input class="cl-qty" type="number" min="1" step="1" placeholder="পিস">
+      <input class="cl-pc" type="number" min="0" step="0.01" placeholder="প্রতি পিস কস্ট">
+      <button type="button" class="cl-del" style="background:none;border:none;color:var(--loss);font-size:20px;cursor:pointer;padding:0">×</button>
+    </div>
+  </div>`;
+}
+function comboTotal(){
+  const tp=n($('c_price').value);
+  $('comboTotal').textContent='মোট বিক্রয় মূল্য: '+money(tp);
+}
+$('openCombo').onclick=()=>{
+  $('comboLines').innerHTML=comboLineHTML();
+  $('c_date').value=todayStr(); $('c_price').value=''; $('c_dl').value=''; $('c_pk').value=''; $('c_note').value='';
+  comboTotal();
+  $('comboModal').classList.add('show');
+};
+$('closeCombo').onclick=()=>$('comboModal').classList.remove('show');
+$('comboModal').addEventListener('click',e=>{ if(e.target===$('comboModal')) $('comboModal').classList.remove('show'); });
+$('comboAddLine').onclick=()=>{ $('comboLines').insertAdjacentHTML('beforeend',comboLineHTML()); };
+$('comboLines').addEventListener('click',e=>{ const d=e.target.closest('.cl-del'); if(!d) return;
+  const rows=$('comboLines').querySelectorAll('.cline'); if(rows.length>1){ d.closest('.cline').remove(); comboTotal(); } });
+$('comboLines').addEventListener('input',comboTotal);
+$('c_price').addEventListener('input',comboTotal);
+
+$('c_save').onclick=async()=>{
+  const btn=$('c_save');
+  const date=$('c_date').value;
+  const lines=[...$('comboLines').querySelectorAll('.cline')].map(r=>({
+    product:r.querySelector('.cl-name').value,
+    qty:parseInt(r.querySelector('.cl-qty').value),
+    pc:n(r.querySelector('.cl-pc').value)
+  })).filter(l=>l.product && l.qty>0);
+  if(!date || !lines.length){ toast('তারিখ ও অন্তত একটা প্রোডাক্ট দিন',true); return; }
+  const totalPrice=n($('c_price').value);
+  if(totalPrice<=0){ toast('পুরো কম্বোর মোট বিক্রয় মূল্য দিন',true); return; }
+  const dl=n($('c_dl').value), pk=n($('c_pk').value);
+  const cnote=$('c_note').value.trim()||null;
+  const oid='C'+Date.now()+Math.floor(Math.random()*1000);
+
+  // মোট বিক্রয় মূল্য কস্টের অনুপাতে ভাগ (কস্ট ০ হলে পিসের অনুপাতে) — মোট সবসময় ঠিক থাকে
+  const costWeight=l=>l.qty*l.pc;
+  let totalCost=lines.reduce((a,l)=>a+costWeight(l),0);
+  const useQty = totalCost<=0; // সব কস্ট ০ হলে পিসের অনুপাতে ভাগ
+  const qtySum=lines.reduce((a,l)=>a+l.qty,0);
+  let allocated=0;
+  const rows=lines.map((l,i)=>{
+    let share;
+    if(i===lines.length-1){ share=totalPrice-allocated; } // শেষ লাইনে বাকিটা — যোগফল হুবহু মিলবে
+    else{ const w = useQty ? (l.qty/qtySum) : (costWeight(l)/totalCost); share=Math.round(totalPrice*w*100)/100; allocated+=share; }
+    return {
+      sale_date:date, product:l.product, qty:l.qty,
+      order_count: i===0 ? 1 : 0,
+      unit_price: share/l.qty,            // ঐ প্রোডাক্টের ভাগের দাম (প্রতি পিস)
+      unit_product_cost:l.pc,
+      unit_operation_cost:0,
+      unit_packaging: i===0 ? (pk/l.qty) : 0,
+      unit_delivery:  i===0 ? dl : 0,       // পুরো ডেলিভারি প্রথম সারিতে; কম্বো = ১ অর্ডার, তাই ১ × dl = dl
+      unit_cpa:0, business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null, note:cnote, order_id:oid
+    };
+  });
+  btn.disabled=true; const {error}=await db.from('hisab_sales').insert(rows); btn.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  toast('কম্বো অর্ডার যোগ হয়েছে ✓');
+  $('comboModal').classList.remove('show');
+  await loadAll();
+};
+
+/* ================= এডিট (ও এডিট অনুরোধ) ================= */
+const EDIT_FIELDS={
+  hisab_sales:[
+    {k:'sale_date',label:'তারিখ',type:'date'},
+    {k:'product',label:'প্রোডাক্ট',type:'product'},
+    {k:'qty',label:'পিস',type:'int'},
+    {k:'order_count',label:'অর্ডার সংখ্যা',type:'int'},
+    {k:'unit_price',label:'বিক্রয় মূল্য ৳',type:'num'},
+    {k:'unit_product_cost',label:'প্রোডাক্ট কস্ট ৳',type:'num'},
+    {k:'unit_packaging',label:'প্যাকেজিং ৳',type:'num'},
+    {k:'unit_delivery',label:'ডেলিভারি ৳ (প্রতি অর্ডার)',type:'num'},
+    {k:'note',label:'নোট',type:'text'},
+  ],
+  hisab_expenses:[
+    {k:'expense_date',label:'তারিখ',type:'date'},
+    {k:'kind',label:'ধরন',type:'select',options:[['overhead','মাসিক overhead'],['ad','Ad খরচ'],['onetime','এককালীন বড় খরচ']]},
+    {k:'category',label:'খাত',type:'text'},
+    {k:'amount',label:'টাকা ৳',type:'num'},
+    {k:'account',label:'একাউন্ট',type:'select',options:[['Cash','Cash'],['Bank','Bank'],['bKash','bKash']]},
+    {k:'note',label:'নোট',type:'text'},
+  ],
+  hisab_returns:[
+    {k:'return_date',label:'রিটার্নের তারিখ',type:'date'},
+    {k:'original_sale_date',label:'মূল বিক্রির তারিখ',type:'date'},
+    {k:'product',label:'প্রোডাক্ট',type:'product'},
+    {k:'qty',label:'পিস',type:'int'},
+    {k:'damaged',label:'ড্যামেজ হয়েছে',type:'check',virtual:true},
+  ],
+};
+const TBL_BN={hisab_sales:'বিক্রি',hisab_returns:'রিটার্ন',hisab_expenses:'খরচ'};
+let EDITING=null;
+
+function arrFor(table){ return table==='hisab_sales'?SALES:table==='hisab_returns'?RETURNS:EXPENSES; }
+function editFieldHTML(f,val){
+  const id='ef_'+f.k;
+  if(f.type==='date') return `<div class="field"><label>${f.label}</label><input id="${id}" type="date" value="${val||''}"></div>`;
+  if(f.type==='int'||f.type==='num') return `<div class="field"><label>${f.label}</label><input id="${id}" type="number" step="${f.type==='int'?'1':'0.01'}" value="${val??''}"></div>`;
+  if(f.type==='text') return `<div class="field"><label>${f.label}</label><input id="${id}" type="text" value="${(val||'').toString().replace(/"/g,'&quot;')}"></div>`;
+  if(f.type==='check') return `<div class="row-check"><input id="${id}" type="checkbox" ${val?'checked':''}><label for="${id}">${f.label}</label></div>`;
+  if(f.type==='select') return `<div class="field"><label>${f.label}</label><select id="${id}">${f.options.map(o=>`<option value="${o[0]}" ${o[0]===val?'selected':''}>${o[1]}</option>`).join('')}</select></div>`;
+  if(f.type==='product'){ const ps=BIZ[CURRENT_BIZ].products.slice(); if(val&&!ps.includes(val)) ps.unshift(val); return `<div class="field"><label>${f.label}</label><select id="${id}">${ps.map(p=>`<option ${p===val?'selected':''}>${p}</option>`).join('')}</select></div>`; }
+  return '';
+}
+function readEditField(f){
+  const el=$('ef_'+f.k); if(!el) return null;
+  if(f.type==='int') return parseInt(el.value)||0;
+  if(f.type==='num') return n(el.value);
+  if(f.type==='check') return el.checked;
+  return el.value;
+}
+function openEdit(table,id){
+  const row=arrFor(table).find(x=>String(x.id)===String(id)); if(!row) return;
+  EDITING={table,id,row};
+  $('editTitle').textContent='✏️ '+TBL_BN[table]+' এডিট';
+  $('editFields').innerHTML=EDIT_FIELDS[table].map(f=>{
+    let v = f.virtual ? (f.k==='damaged' ? n(row.unit_product_cost)>0 : '') : row[f.k];
+    return editFieldHTML(f,v);
+  }).join('');
+  const isAdmin=CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin';
+  $('editHint').textContent = isAdmin ? '' : 'সেভ করলে admin-এর কাছে অনুমোদনের জন্য অনুরোধ যাবে।';
+  $('editModal').classList.add('show');
+}
+function collectEdit(){
+  const {table,row}=EDITING; const obj={};
+  EDIT_FIELDS[table].forEach(f=>{ if(!f.virtual) obj[f.k]=readEditField(f); });
+  if(table==='hisab_returns'){
+    const damaged=readEditField({k:'damaged',type:'check'});
+    const info=saleUnitInfo(obj.product,obj.original_sale_date);
+    obj.unit_product_cost = damaged ? (info?info.pc:n(row.unit_product_cost)) : 0;
+  }
+  return obj;
+}
+function fmtVal(v){ return (typeof v==='number') ? (Math.round(v*100)/100) : v; }
+function formatChanges(table,row,obj){
+  const parts=[];
+  EDIT_FIELDS[table].forEach(f=>{
+    if(f.k==='damaged'){ const oldD=n(row.unit_product_cost)>0, newD=readEditField({k:'damaged',type:'check'}); if(oldD!==newD) parts.push(`ড্যামেজ: ${oldD?'হ্যাঁ':'না'}→${newD?'হ্যাঁ':'না'}`); return; }
+    if(f.virtual) return;
+    const ov=row[f.k], nv=obj[f.k];
+    if(String(fmtVal(ov))!==String(fmtVal(nv))) parts.push(`${f.label}: ${fmtVal(ov)??''}→${fmtVal(nv)??''}`);
+  });
+  return parts.length?parts.join(', '):'কোনো পরিবর্তন নেই';
+}
+document.addEventListener('click',ev=>{ const b=ev.target.closest('.edt'); if(!b) return; openEdit(b.dataset.t,b.dataset.id); });
+
+/* ===== বিক্রির বিস্তারিত ভিউ ===== */
+function saleBreakdownSingle(s){
+  const pcs=n(s.qty), ords=ordOf(s);
+  const rev=pcs*n(s.unit_price);
+  const pcCost=pcs*n(s.unit_product_cost), pkCost=pcs*n(s.unit_packaging), dlCost=delivCount(s)*n(s.unit_delivery);
+  const total=pcCost+pkCost+dlCost, gross=rev-total;
+  return `
+    <div style="font-weight:700;font-size:15px;margin-bottom:2px">${s.product}</div>
+    <div class="note-inline" style="margin-bottom:12px">${niceDate(s.sale_date)} · ${pcs} পিস · ${ords} অর্ডার${s.note?' · '+s.note:''}</div>
+    <div class="report-line"><span class="k">বিক্রয় মূল্য (৳${rnd(n(s.unit_price))} × ${pcs} পিস)</span><span class="v num">${money(rev)}</span></div>
+    <div class="report-line"><span class="k">প্রোডাক্ট কস্ট (৳${rnd(n(s.unit_product_cost))} × ${pcs} পিস)</span><span class="v num neg">${money(pcCost)}</span></div>
+    <div class="report-line"><span class="k">প্যাকেজিং (৳${rnd(n(s.unit_packaging))} × ${pcs} পিস)</span><span class="v num neg">${money(pkCost)}</span></div>
+    <div class="report-line"><span class="k">ডেলিভারি (৳${rnd(n(s.unit_delivery))} × ${delivCount(s)} অর্ডার)</span><span class="v num neg">${money(dlCost)}</span></div>
+    <div class="report-line"><span class="k">মোট খরচ</span><span class="v num neg">${money(total)}</span></div>
+    <div class="report-line total"><span class="k">গ্রস লাভ</span><span class="v num ${gross>=0?'pos':'neg'}">${money(gross)}</span></div>
+    <div class="note-inline" style="margin-top:10px">* অপারেশন ও Ad কস্ট এখানে ধরা হয়নি — ওগুলো মাসের রিপোর্টে যোগ হয়।</div>`;
+}
+function saleBreakdownCombo(rows){
+  let rev=0,pcCost=0,pkCost=0,dlCost=0,qty=0;
+  const lines=rows.map(s=>{ const r=n(s.qty)*n(s.unit_price); rev+=r; pcCost+=n(s.qty)*n(s.unit_product_cost); pkCost+=n(s.qty)*n(s.unit_packaging); dlCost+=delivCount(s)*n(s.unit_delivery); qty+=n(s.qty);
+    return `<div class="report-line"><span class="k">${s.product} · ${n(s.qty)} পিস (কস্ট ৳${rnd(n(s.unit_product_cost))}/পিস)</span><span class="v num">${money(r)}</span></div>`; }).join('');
+  const total=pcCost+pkCost+dlCost, gross=rev-total;
+  return `
+    <div style="font-weight:700;font-size:15px;margin-bottom:2px">কম্বো অর্ডার · ১ অর্ডার</div>
+    <div class="note-inline" style="margin-bottom:12px">${niceDate(rows[0].sale_date)} · ${qty} পিস${rows[0].note?' · '+rows[0].note:''}</div>
+    <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:2px">প্রোডাক্ট অনুযায়ী</div>
+    ${lines}
+    <div class="report-line"><span class="k">মোট বিক্রি</span><span class="v num">${money(rev)}</span></div>
+    <div class="report-line"><span class="k">প্রোডাক্ট কস্ট</span><span class="v num neg">${money(pcCost)}</span></div>
+    <div class="report-line"><span class="k">প্যাকেজিং</span><span class="v num neg">${money(pkCost)}</span></div>
+    <div class="report-line"><span class="k">ডেলিভারি</span><span class="v num neg">${money(dlCost)}</span></div>
+    <div class="report-line"><span class="k">মোট খরচ</span><span class="v num neg">${money(total)}</span></div>
+    <div class="report-line total"><span class="k">গ্রস লাভ</span><span class="v num ${gross>=0?'pos':'neg'}">${money(gross)}</span></div>
+    <div class="note-inline" style="margin-top:10px">* অপারেশন ও Ad কস্ট এখানে ধরা হয়নি — ওগুলো মাসের রিপোর্টে যোগ হয়।</div>`;
+}
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest('.viw'); if(!b) return;
+  const box=$('saleViewOut'); if(!box) return;
+  if(b.dataset.order){ const rows=SALES.filter(x=>x.order_id===b.dataset.order); if(rows.length) box.innerHTML=saleBreakdownCombo(rows); }
+  else { const s=SALES.find(x=>String(x.id)===String(b.dataset.id)); if(s) box.innerHTML=saleBreakdownSingle(s); }
+  $('saleViewModal').classList.add('show');
+});
+$('closeSaleView').onclick=()=>$('saleViewModal').classList.remove('show');
+$('saleViewModal').addEventListener('click',e=>{ if(e.target===$('saleViewModal')) $('saleViewModal').classList.remove('show'); });
+
+$('closeEdit').onclick=()=>$('editModal').classList.remove('show');
+$('editModal').addEventListener('click',e=>{ if(e.target===$('editModal')) $('editModal').classList.remove('show'); });
+
+$('editSave').onclick=async()=>{
+  if(!EDITING) return;
+  const {table,id,row}=EDITING;
+  const obj=collectEdit();
+  const summary=formatChanges(table,row,obj);
+  if(summary==='কোনো পরিবর্তন নেই'){ toast('কিছু বদলানো হয়নি',true); return; }
+  const isAdmin=CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin';
+  $('editSave').disabled=true;
+  if(isAdmin){
+    const {error}=await db.from(table).update(obj).eq('id',id);
+    $('editSave').disabled=false;
+    if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+    toast('আপডেট হয়েছে ✓');
+  }else{
+    const rec={ table_name:table, row_id:Number(id), business:CURRENT_BIZ,
+      descr:`${TBL_BN[table]} এডিট — ${summary}`, changes:obj,
+      requested_by:CURRENT_USER?.id||null, requested_name:(CURRENT_PROFILE?.name||CURRENT_PROFILE?.email||''), status:'pending' };
+    const {error}=await db.from('edit_requests').insert(rec);
+    $('editSave').disabled=false;
+    if(error){ toast('অনুরোধ পাঠানো যায়নি: '+(error.message||''),true); return; }
+    toast('এডিট অনুরোধ পাঠানো হয়েছে ✓ admin অনুমোদন দিলে বদলাবে');
+  }
+  $('editModal').classList.remove('show');
+  await loadAll();
+};
+
+/* এডিট অনুরোধ অনুমোদন/বাতিল */
+document.addEventListener('click',async(ev)=>{
+  const ok=ev.target.closest('.er-ok'), no=ev.target.closest('.er-no');
+  if(!ok && !no) return;
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  if(ok){
+    const req=EDITREQS.find(x=>String(x.id)===ok.dataset.id);
+    if(!req) return;
+    if(!confirm('অনুমোদন করে পরিবর্তন প্রয়োগ করবেন?')) return;
+    await db.from(req.table_name).update(req.changes).eq('id',req.row_id);
+    await db.from('edit_requests').delete().eq('id',req.id);
+    toast('পরিবর্তন প্রয়োগ হয়েছে ✓');
+  }else{
+    await db.from('edit_requests').delete().eq('id',no.dataset.id);
+    toast('এডিট অনুরোধ বাতিল');
+  }
+  await loadAll();
+});
+
+/* ================= AI বিশ্লেষণ ================= */
+$('openAI').onclick=()=>{ $('aiOut').textContent='"বিশ্লেষণ করো" বাটনে ক্লিক করুন…'; $('aiModal').classList.add('show'); };
+$('closeAI').onclick=()=>$('aiModal').classList.remove('show');
+$('aiModal').addEventListener('click',e=>{ if(e.target===$('aiModal')) $('aiModal').classList.remove('show'); });
+
+function buildYearData(){
+  // চলতি ব্যবসার সব মাস
+  const months=[...new Set([
+    ...SALES.map(s=>monthOf(s.sale_date)),
+    ...EXPENSES.map(e=>monthOf(e.expense_date)),
+    ...RETURNS.map(r=>monthOf(r.original_sale_date)),
+    ...CASHIN.map(c=>monthOf(c.cash_date))
+  ].filter(Boolean))].sort();
+
+  const today=todayStr(), curM=monthStr();
+  // গত মাস
+  const [yy,mm]=curM.split('-').map(Number);
+  const lastM = mm===1 ? `${yy-1}-12` : `${yy}-${String(mm-1).padStart(2,'0')}`;
+
+  // ===== বর্তমান ব্যালেন্স (renderCash এর মতোই) =====
+  const accs=['Bank','bKash','Cash']; const inSum={}, outSum={};
+  accs.forEach(a=>{ inSum[a]=0; outSum[a]=0; });
+  CASHIN.forEach(c=>{ const a=c.account||'Cash'; inSum[a]=(inSum[a]||0)+n(c.amount); });
+  EXPENSES.forEach(e=>{ const a=e.account||'Cash'; outSum[a]=(outSum[a]||0)+n(e.amount); });
+  const bal=a=>(inSum[a]||0)-(outSum[a]||0);
+  const totalBal=bal('Bank')+bal('bKash')+bal('Cash');
+  // চলতি মাসে টাকা যোগ
+  const cashinMonth=CASHIN.filter(c=>monthOf(c.cash_date)===curM).reduce((a,c)=>a+n(c.amount),0);
+  const cashinTotal=CASHIN.reduce((a,c)=>a+n(c.amount),0);
+  // স্টক
+  const stk=stockByProduct();
+
+  let txt=`ব্যবসা: ${BIZ[CURRENT_BIZ].label}\n`;
+  txt+=`মুদ্রা: টাকা (৳)\n`;
+  txt+=`আজকের তারিখ: ${today} (${niceDate(today)})\n`;
+  txt+=`চলতি মাস: ${curM}, গত মাস: ${lastM}\n`;
+
+  // ===== বর্তমান অবস্থা =====
+  txt+=`\n===== বর্তমান অবস্থা (এই মুহূর্তের, admin) =====\n`;
+  txt+=`ব্যাংক ব্যালেন্স: ${rnd(bal('Bank'))}\n`;
+  txt+=`bKash ব্যালেন্স: ${rnd(bal('bKash'))}\n`;
+  txt+=`Cash ব্যালেন্স: ${rnd(bal('Cash'))}\n`;
+  txt+=`মোট ব্যালেন্স (Bank+bKash+Cash): ${rnd(totalBal)}\n`;
+  txt+=`স্টকে মালের মূল্য (বর্তমান): ${rnd(stk.totalVal)}\n`;
+  txt+=`চলতি মাসে টাকা যোগ হয়েছে (cash-in): ${rnd(cashinMonth)}\n`;
+  txt+=`মোট টাকা যোগ (সব সময়): ${rnd(cashinTotal)}\n`;
+
+  // ===== আজকের হিসাব =====
+  const d0=calcDay(today);
+  const ci0=CASHIN.filter(c=>c.cash_date===today).reduce((a,c)=>a+n(c.amount),0);
+  txt+=`\n===== আজকের হিসাব (${today}) =====\n`;
+  txt+=`বিক্রি ${rnd(d0.revenue)}, সরাসরি খরচ ${rnd(d0.directCost)}, অপারেশন ${rnd(d0.opCost)}, Ad ${rnd(d0.adCost)}, রিটার্ন লস ${rnd(d0.returnLoss)}, এককালীন খরচ ${rnd(d0.oneTime)}, নিট লাভ ${rnd(d0.net)}, পার্সেল ${d0.parcels}, অর্ডার ${d0.orders}, টাকা যোগ ${rnd(ci0)}\n`;
+
+  // ===== দৈনিক হিসাব (চলতি মাস ও গত মাস) =====
+  const dayDates=[...new Set([
+    ...SALES.map(s=>s.sale_date),
+    ...EXPENSES.map(e=>e.expense_date),
+    ...RETURNS.map(r=>r.original_sale_date),
+    ...CASHIN.map(c=>c.cash_date)
+  ].filter(Boolean).filter(d=>monthOf(d)===curM||monthOf(d)===lastM))].sort();
+  if(dayDates.length){
+    txt+=`\n===== দৈনিক হিসাব (চলতি মাস ও গত মাস) =====\n`;
+    dayDates.forEach(d=>{ const r=calcDay(d);
+      const ci=CASHIN.filter(c=>c.cash_date===d).reduce((a,c)=>a+n(c.amount),0);
+      txt+=`${d}: বিক্রি ${rnd(r.revenue)}, মোট খরচ ${rnd(r.revenue-r.net)}, নিট লাভ ${rnd(r.net)}, পার্সেল ${r.parcels}, অর্ডার ${r.orders}, রিটার্ন লস ${rnd(r.returnLoss)}, টাকা যোগ ${rnd(ci)}\n`;
+    });
+  }
+
+  // ===== মাসভিত্তিক হিসাব =====
+  txt+=`\n===== মাসভিত্তিক হিসাব (সব মাস) =====\n`;
+  months.forEach(ym=>{ const r=calcMonth(ym);
+    const ci=CASHIN.filter(c=>monthOf(c.cash_date)===ym).reduce((a,c)=>a+n(c.amount),0);
+    txt+=`${ym}: বিক্রি ${rnd(r.revenue)}, সরাসরি খরচ ${rnd(r.directCost)}, অপারেশন ${rnd(r.opCost)}, Ad ${rnd(r.adCost)}, রিটার্ন লস ${rnd(r.returnLoss)}, এককালীন খরচ ${rnd(r.oneTime)}, নিট লাভ ${rnd(r.net)}, পার্সেল ${r.parcels}, অর্ডার ${r.orders}, টাকা যোগ ${rnd(ci)}\n`;
+  });
+
+  // ===== খরচের খাতভিত্তিক মোট (সব সময়) =====
+  const g={};
+  EXPENSES.forEach(e=>{ const k=(e.category||'অন্যান্য'); g[k]=(g[k]||0)+n(e.amount); });
+  txt+=`\n===== খরচের খাতভিত্তিক মোট (পুরো সময়) =====\n`;
+  Object.keys(g).sort((a,b)=>g[b]-g[a]).forEach(k=>{ txt+=`${k}: ${rnd(g[k])}\n`; });
+
+  // ===== স্টক বিস্তারিত =====
+  if(stk.rows.length){
+    txt+=`\n===== স্টক বিস্তারিত (বর্তমান) =====\n`;
+    stk.rows.forEach(x=>{ txt+=`${x.product}: ${x.cur} পিস, গড় দাম ${rnd(x.avg)}, মূল্য ${rnd(x.val)}\n`; });
+  }
+
+  return {txt, months};
+}
+
+$('aiRun').onclick=async()=>{
+  if(!OPENROUTER_KEY || OPENROUTER_KEY.startsWith('PASTE_')){ $('aiOut').textContent='OpenRouter key বসানো হয়নি। কোডের উপরে OPENROUTER_KEY লাইনে আপনার key বসান।'; return; }
+  const {txt,months}=buildYearData();
+  if(!months.length){ $('aiOut').textContent='এই ব্যবসায় এখনো যথেষ্ট ডেটা নেই।'; return; }
+  $('aiRun').disabled=true; $('aiOut').textContent='বিশ্লেষণ হচ্ছে… একটু অপেক্ষা করুন।';
+  const sys=`তুমি একজন অভিজ্ঞ বিজনেস অ্যানালিস্ট। নিচে "${BIZ[CURRENT_BIZ].label}" ব্যবসার বিস্তারিত হিসাব দেওয়া আছে — আজকের হিসাব, প্রতিদিনের (চলতি ও গত মাস), মাসভিত্তিক, খরচের খাত, বর্তমান ব্যাংক/bKash/Cash ব্যালেন্স, স্টকের মূল্য ও টাকা যোগ (cash-in)। ডেটার উপরে "আজকের তারিখ" দেওয়া আছে — "আজ", "গতকাল", "গত মাস", "এই মাস" এসব সেটা থেকে হিসাব করবে। শুধু এই ডেটার ভিত্তিতে বাংলায় সংক্ষিপ্ত, পরিষ্কার বিশ্লেষণ দাও। অবশ্যই বলবে: (১) সামগ্রিক অবস্থা ও লাভের ধারা, (২) কোন খাতে সবচেয়ে বেশি খরচ হচ্ছে, (৩) কোথায় খরচ কমানো যেতে পারত ও কীভাবে, (৪) ২-৩টি বাস্তবসম্মত পরামর্শ। সংখ্যা ঠিক ডেটা থেকে নেবে, নিজে অনুমান করবে না। বুলেট পয়েন্টে, সহজ ভাষায়, বেশি লম্বা নয়।`;
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENROUTER_KEY},
+      body:JSON.stringify({ model:AI_MODEL, messages:[{role:'system',content:sys},{role:'user',content:txt}] })
+    });
+    const j=await res.json();
+    if(j.error){ $('aiOut').textContent='সমস্যা: '+(j.error.message||JSON.stringify(j.error)); }
+    else{ $('aiOut').textContent = j.choices?.[0]?.message?.content || 'উত্তর পাওয়া যায়নি।'; }
+  }catch(err){ $('aiOut').textContent='সংযোগে সমস্যা: '+(err.message||''); }
+  $('aiRun').disabled=false;
+};
+
+/* ================= Floating AI Chat (admin only, read-only) ================= */
+let CHAT=[];
+$('chatFab').onclick=()=>{
+  const cp=$('chatPanel'); cp.classList.toggle('show');
+  if(cp.classList.contains('show') && !$('chatBody').children.length){
+    chatAdd('a','আসসালামু আলাইকুম! আমি আপনার হিসাব সহকারী। '+BIZ[CURRENT_BIZ].label+'-এর হিসাব নিয়ে যা জানতে চান জিজ্ঞেস করুন — যেমন "এই মাসে লাভ কত?", "কোন খাতে খরচ বেশি?", "গত মাসের চেয়ে কেমন চলছে?"');
+  }
+};
+$('chatClose').onclick=()=>$('chatPanel').classList.remove('show');
+function chatAdd(who,text){ const d=document.createElement('div'); d.className='msg '+who; d.textContent=text; $('chatBody').appendChild(d); $('chatBody').scrollTop=$('chatBody').scrollHeight; return d; }
+
+async function chatSend(){
+  const q=$('chatInput').value.trim(); if(!q) return;
+  if(!OPENROUTER_KEY || OPENROUTER_KEY.startsWith('PASTE_')){ chatAdd('a','OpenRouter key বসানো হয়নি। কোডের উপরে OPENROUTER_KEY লাইনে key বসান।'); return; }
+  $('chatInput').value=''; chatAdd('u',q);
+  const typing=chatAdd('a','লিখছে…');
+  const {txt}=buildYearData();
+  const sys=`তুমি "${BIZ[CURRENT_BIZ].label}" ব্যবসার হিসাব সহকারী। নিচে এই ব্যবসার বিস্তারিত হিসাব দেওয়া আছে — আজকের হিসাব, প্রতিদিনের (চলতি ও গত মাস), মাসভিত্তিক, খরচের খাত, বর্তমান ব্যাংক/bKash/Cash ব্যালেন্স, স্টকের মূল্য ও টাকা যোগ (cash-in)।
+
+নিয়ম:
+- ব্যবহারকারী যেভাবেই জিজ্ঞেস করুক সেভাবে উত্তর দেবে। যেমন: "আজকের সামারি দাও" → আজকের বিক্রি, খরচ, নিট লাভ, আজ টাকা যোগ, এবং বর্তমান ব্যালেন্স ও স্টকের মূল্য একসাথে বলবে। "সেপ্টেম্বরের ৭–১০ তারিখের সামারি দাও" → ঐ কয়দিনের দৈনিক হিসাব যোগ করে বলবে। "গত মাসের ডেটা দাও" / "এই মাসে লাভ কত?" → মাসভিত্তিক হিসাব থেকে বলবে।
+- "আজ", "গতকাল", "গত মাস", "এই মাস" ইত্যাদি ডেটার উপরে দেওয়া "আজকের তারিখ" থেকে হিসাব করবে।
+- একটা রেঞ্জ চাইলে ঐ পরিসরের প্রতিদিনের মান যোগ করে মোট দেবে (বিক্রি, খরচ, নিট লাভ, পার্সেল, অর্ডার)।
+- সংখ্যা শুধু এই ডেটা থেকে নেবে, নিজে অনুমান/বানাবে না। নির্দিষ্ট দিন/মাস ডেটায় না থাকলে সরাসরি বলবে ঐ সময়ের তথ্য নেই।
+- তুমি কোনো কিছু পরিবর্তন/যোগ/মুছতে পারো না — শুধু তথ্য ও বিশ্লেষণ দাও।
+- বাংলায়, সংক্ষিপ্ত ও পরিষ্কার উত্তর দাও।
+
+===== হিসাব =====
+${txt}`;
+  CHAT.push({role:'user',content:q});
+  if(CHAT.length>10) CHAT=CHAT.slice(-10);
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENROUTER_KEY},
+      body:JSON.stringify({ model:AI_MODEL, messages:[{role:'system',content:sys},...CHAT] })
+    });
+    const j=await res.json();
+    const ans = j.error ? ('সমস্যা: '+(j.error.message||'')) : (j.choices?.[0]?.message?.content || 'উত্তর পাওয়া যায়নি।');
+    typing.textContent=ans;
+    if(!j.error) CHAT.push({role:'assistant',content:ans});
+  }catch(err){ typing.textContent='সংযোগে সমস্যা: '+(err.message||''); }
+  $('chatBody').scrollTop=$('chatBody').scrollHeight;
+}
+$('chatSend').onclick=chatSend;
+$('chatInput').addEventListener('keydown',e=>{ if(e.key==='Enter') chatSend(); });
+
+function tk(v){ return '৳'+Number(v).toLocaleString('en-US',{maximumFractionDigits:2}); }
+
+$('inv_make').onclick=async()=>{
+  toast('PDF তৈরি হচ্ছে…');
+  if(!(await ensurePdf())){ toast('PDF লাইব্রেরি লোড হয়নি — ইন্টারনেট চেক করুন',true); return; }
+  const lines=[...$('invLines').querySelectorAll('.invline')].map(r=>({
+    name:r.querySelector('.il-name').value.trim(),
+    qty:n(r.querySelector('.il-qty').value),
+    price:n(r.querySelector('.il-price').value)
+  })).filter(l=>l.name && l.qty>0);
+  if(!lines.length){ toast('অন্তত একটা প্রোডাক্ট দিন',true); return; }
+  const ship=n($('inv_ship').value);
+  let sub=0; lines.forEach(l=>sub+=l.qty*l.price);
+  const grand=sub+ship;
+  const invNo=$('inv_no').value||'INV';
+  const dateTxt=niceDate(todayStr());
+  const COMPANY=BIZ[CURRENT_BIZ].company;
+  const C = CURRENT_BIZ==='redbox'
+    ? { grad1:'#c8546b', grad2:'#a63c53', soft:'#fbeaee', line:'#0c2b2f', accent:'#a63c53' }
+    : CURRENT_BIZ==='yeaqqen'
+    ? { grad1:'#4a3b2e', grad2:'#352a20', soft:'#f8edd6', line:'#0c2b2f', accent:'#b07a28' }
+    : { grad1:'#0d7377', grad2:'#0a5c5f', soft:'#e7f4f3', line:'#0c2b2f', accent:'#0d7377' };
+
+  const rowsHTML=lines.map((l,i)=>`<tr>
+    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">${i+1}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0">${l.name}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center">${l.qty}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${tk(l.price)}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:right">${tk(l.qty*l.price)}</td>
+  </tr>`).join('');
+
+  $('invoicePaper').innerHTML=`
+    <div style="padding:0 0 24px 0">
+      <div style="background:linear-gradient(135deg,${C.grad1},${C.grad2});color:#fff;padding:28px 32px;display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:26px;font-weight:700">${COMPANY.name}</div>
+          <div style="font-size:13px;opacity:.9;margin-top:4px">${COMPANY.addr}</div>
+          <div style="font-size:13px;opacity:.9">📞 ${COMPANY.phone}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:30px;font-weight:700;letter-spacing:2px">INVOICE</div>
+          <div style="font-size:13px;opacity:.9;margin-top:4px">${invNo}</div>
+          <div style="font-size:13px;opacity:.9">${dateTxt}</div>
+        </div>
+      </div>
+
+      <div style="padding:22px 32px 0">
+        <div style="font-size:12px;color:#5b7075;font-weight:600;text-transform:uppercase;letter-spacing:1px">Bill To</div>
+        <div style="font-size:17px;font-weight:700;margin-top:4px">${$('inv_cname').value.trim()||'—'}</div>
+        <div style="font-size:13px;color:#5b7075;margin-top:2px">${$('inv_caddr').value.trim()||''}</div>
+        <div style="font-size:13px;color:#5b7075">${$('inv_cphone').value.trim()?'📞 '+$('inv_cphone').value.trim():''}</div>
+      </div>
+
+      <div style="padding:20px 32px 0">
+        <table style="width:100%;border-collapse:collapse;font-size:14px">
+          <thead><tr style="background:${C.soft};color:${C.accent}">
+            <th style="padding:11px 12px;text-align:left;border-bottom:2px solid ${C.grad1}">#</th>
+            <th style="padding:11px 12px;text-align:left;border-bottom:2px solid ${C.grad1}">প্রোডাক্ট</th>
+            <th style="padding:11px 12px;text-align:center;border-bottom:2px solid ${C.grad1}">QNT</th>
+            <th style="padding:11px 12px;text-align:right;border-bottom:2px solid ${C.grad1}">দাম</th>
+            <th style="padding:11px 12px;text-align:right;border-bottom:2px solid ${C.grad1}">মোট</th>
+          </tr></thead>
+          <tbody>${rowsHTML}</tbody>
+        </table>
+      </div>
+
+      <div style="padding:16px 32px 0;display:flex;justify-content:flex-end">
+        <table style="font-size:14px;min-width:240px">
+          <tr><td style="padding:6px 12px;color:#5b7075">সাব-টোটাল</td><td style="padding:6px 12px;text-align:right;font-weight:600">${tk(sub)}</td></tr>
+          <tr><td style="padding:6px 12px;color:#5b7075">ডেলিভারি চার্জ</td><td style="padding:6px 12px;text-align:right;font-weight:600">${tk(ship)}</td></tr>
+          <tr><td style="padding:12px;color:#0c2b2f;font-weight:700;font-size:16px;border-top:2px solid #0c2b2f">সর্বমোট</td><td style="padding:12px;text-align:right;font-weight:700;font-size:18px;color:${C.accent};border-top:2px solid #0c2b2f">${tk(grand)}</td></tr>
+        </table>
+      </div>
+
+      <div style="padding:26px 32px 0;color:#5b7075;font-size:12.5px;text-align:center;border-top:1px solid #e2e8f0;margin-top:24px;padding-top:16px">
+        ${COMPANY.name}-এর সাথে থাকার জন্য ধন্যবাদ। 🌿<br>${COMPANY.phone}
+      </div>
+    </div>`;
+
+  toast('PDF তৈরি হচ্ছে…');
+  try{
+    const canvas=await html2canvas($('invoicePaper'),{scale:2,backgroundColor:'#ffffff'});
+    const img=canvas.toDataURL('image/png');
+    const { jsPDF }=window.jspdf;
+    const pdf=new jsPDF('p','mm','a4');
+    const pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight();
+    let w=pw, h=canvas.height*pw/canvas.width;
+    if(h>ph){ h=ph; w=canvas.width*ph/canvas.height; }
+    pdf.addImage(img,'PNG',(pw-w)/2,0,w,h);
+    pdf.save(`${invNo}.pdf`);
+    toast('Invoice তৈরি হয়েছে ✓');
+    $('invoiceModal').classList.remove('show');
+  }catch(err){ console.error(err); toast('PDF বানাতে সমস্যা: '+(err.message||''),true); }
+};
+
+/* ================= লগইন ও অ্যাক্সেস ================= */
+let CURRENT_USER=null, CURRENT_PROFILE=null;
+
+function showLogin(msg){
+  $('loginScreen').style.display='flex';
+  $('appRoot').style.display='none';
+  if(msg) $('li_msg').textContent=msg;
+}
+function showApp(){
+  $('loginScreen').style.display='none';
+  $('appRoot').style.display='block';
+}
+
+// role/অ্যাক্সেস অনুযায়ী ট্যাব ও রিপোর্ট দেখানো/লুকানো
+function bizAccess(biz){
+  const p=CURRENT_PROFILE||{};
+  if(p.role==='admin') return {sales:true,returns:true,expenses:true,stock:true};
+  return { sales:!!p[biz+'_sales'], returns:!!p[biz+'_returns'], expenses:!!p[biz+'_expenses'], stock:!!p[biz+'_stock'] };
+}
+function allowedBusinesses(){
+  const p=CURRENT_PROFILE||{};
+  if(p.role==='admin') return ['aqua','redbox','yeaqqen'];
+  return ['aqua','redbox','yeaqqen'].filter(b=>{ const a=bizAccess(b); return a.sales||a.returns||a.expenses||a.stock; });
+}
+
+function applyPermissions(){
+  const p=CURRENT_PROFILE||{};
+  const isAdmin = p.role==='admin';
+  const a=bizAccess(CURRENT_BIZ);
+  const can={ dash:isAdmin, sales:a.sales, returns:a.returns, zone:(a.sales||a.returns), expenses:a.expenses, stock:a.stock, cash:isAdmin, salary:isAdmin, report:isAdmin, log:isAdmin, agent:isAdmin, admin:isAdmin };
+  document.querySelectorAll('.tab').forEach(t=>{ t.style.display = can[t.dataset.tab] ? '' : 'none'; });
+  $('summaryBox').style.display = isAdmin ? '' : 'none';
+  const ccb=$('ccBtn'); if(ccb) ccb.style.display = isAdmin ? 'inline-flex' : 'none';
+  const fab=$('chatFab'); if(fab) fab.style.display = isAdmin ? 'block' : 'none';
+  if(!isAdmin){ const cp=$('chatPanel'); if(cp) cp.classList.remove('show'); }
+  const order=['dash','sales','returns','zone','expenses','stock','cash','salary','report','log','agent','admin'];
+  const first=order.find(k=>can[k]);
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  if(first){ const ft=document.querySelector(`.tab[data-tab="${first}"]`); ft.classList.add('active'); $('panel-'+first).classList.add('active'); const tt=$('tbTitle'); if(tt) tt.textContent=(ft.textContent||'').trim(); }
+  $('whoami').textContent = (p.name||p.email||'') + (isAdmin?' (admin)':'');
+}
+
+function setBizTheme(){ document.body.setAttribute('data-biz', CURRENT_BIZ); }
+
+// কোন কোন ব্যবসার বাটন দেখাবে + সক্রিয়টা বাছা
+function setupBizSwitch(){
+  const allow=allowedBusinesses();
+  if(!allow.includes(CURRENT_BIZ)) CURRENT_BIZ = allow[0] || 'aqua';
+  document.querySelectorAll('.bizbtn').forEach(b=>{
+    b.style.display = allow.includes(b.dataset.biz) ? '' : 'none';
+    b.classList.toggle('active', b.dataset.biz===CURRENT_BIZ);
+  });
+  $('bizSwitch').style.display = allow.length>1 ? 'flex' : 'none';
+  setBizTheme();
+}
+document.querySelectorAll('.bizbtn').forEach(b=>{ b.onclick=()=>{
+  CURRENT_BIZ=b.dataset.biz; setBizTheme();
+  document.querySelectorAll('.bizbtn').forEach(x=>x.classList.toggle('active',x===b));
+  CHAT=[]; const cb=$('chatBody'); if(cb) cb.innerHTML=''; const cp=$('chatPanel'); if(cp) cp.classList.remove('show');
+  applyBizFilter(); applyPermissions(); renderProducts(); renderAll();
+};});
+
+async function loadProfileAndStart(){
+  const { data:{ user } } = await db.auth.getUser();
+  CURRENT_USER=user;
+  if(!user){ showLogin(); return; }
+  let prof=null;
+  try{
+    const { data } = await db.from('profiles').select('*').eq('id',user.id).limit(1);
+    if(Array.isArray(data) && data.length) prof=data[0];
+  }catch(e){ console.warn('profile load failed',e); }
+  CURRENT_PROFILE = prof || { email:user.email, role:'staff' };
+  showApp(); setupBizSwitch(); applyPermissions(); await loadAll();
+}
+
+$('li_btn').onclick=async()=>{
+  const email=$('li_email').value.trim(), pass=$('li_pass').value;
+  $('li_msg').textContent='';
+  if(!email||!pass){ $('li_msg').textContent='ইমেইল ও পাসওয়ার্ড দিন'; return; }
+  $('li_btn').disabled=true;
+  const { error }=await db.auth.signInWithPassword({email,password:pass});
+  $('li_btn').disabled=false;
+  if(error){ $('li_msg').textContent='লগইন হয়নি: '+(error.message||'ভুল ইমেইল/পাসওয়ার্ড'); return; }
+  $('li_pass').value='';
+  await loadProfileAndStart();
+};
+$('li_pass').addEventListener('keydown',e=>{ if(e.key==='Enter') $('li_btn').click(); });
+
+$('logoutBtn').onclick=async()=>{ await db.auth.signOut(); CURRENT_USER=null; CURRENT_PROFILE=null; showLogin('লগআউট হয়েছে'); };
+
+/* ---------- শুরু ---------- */
+$('s_date').value=todayStr(); $('r_rdate').value=todayStr(); $('e_date').value=todayStr();
+if($('st_date')) $('st_date').value=todayStr();
+if($('ci_date')) $('ci_date').value=todayStr();
+if($('z_date')) $('z_date').value=todayStr();
+if($('sal_date')) $('sal_date').value=todayStr();
+if($('sal_month')) $('sal_month').value=monthStr();
+$('rep_day').value=todayStr(); $('rep_month').value=monthStr();
+if($('ex_from')) $('ex_from').value=todayStr();
+if($('ex_to')) $('ex_to').value=todayStr();
+updateExLabel();
+loadProfileAndStart();
+</script>
+
+</body>
+</html>
