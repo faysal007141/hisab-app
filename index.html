@@ -870,6 +870,7 @@
       <button class="subbtn active" data-sub="report">📊 এজেন্ট রিপোর্ট</button>
       <button class="subbtn" data-sub="entry">🧾 অর্ডার কনফার্ম</button>
       <button class="subbtn" data-sub="today">📋 অর্ডার তালিকা</button>
+      <button class="subbtn agadmin" data-sub="comm">💰 মাস শেষ কমিশন</button>
       <button class="subbtn agadmin" data-sub="settings">⚙️ সেটিংস</button>
     </div>
 
@@ -907,6 +908,16 @@
         <h2>অর্ডার তালিকা <span class="sub">ডেলিভারি হলে ডেলিভারড, বাতিল হলে ক্যান্সেল মার্ক করুন</span></h2>
         <div class="field"><label>তারিখ বাছুন</label><input type="date" id="ag_tdate"></div>
         <div class="list" id="ag_todayList"><div class="empty">লোড হচ্ছে…</div></div>
+      </div>
+    </div>
+
+    <!-- মাস শেষ কমিশন (admin) -->
+    <div class="subpanel" data-sub="comm">
+      <div class="card">
+        <h2>মাস শেষ কমিশন <span class="sub">প্রতি এজেন্টের কয়টা কনভার্ট অর্ডার ডেলিভারি হয়েছে বসান — কমিশন অটো হিসাব হবে</span></h2>
+        <div class="field"><label>মাস</label><input type="month" id="comm_month"></div>
+        <div class="list" id="commList"><div class="empty">লোড হচ্ছে…</div></div>
+        <button class="btn" id="comm_save" style="margin-top:12px">সব সেভ করুন</button>
       </div>
     </div>
 
@@ -1052,7 +1063,7 @@ const BIZ={
 const bizOf = x => x.business || 'aqua';
 const bizLabel = b => (BIZ[b]&&BIZ[b].label) || 'Aqua Purify BD';
 let ALL_SALES=[], ALL_RETURNS=[], ALL_EXPENSES=[], ALL_STOCK=[], ALL_CASHIN=[], ALL_ZONE=[];
-let SALES=[], RETURNS=[], EXPENSES=[], STOCK=[], CASHIN=[], ZONE=[], PROFILES=[], DELREQS=[], EDITREQS=[], EMPLOYEES=[], SALARY=[], CCORDERS=[], ATTEND=[], ADVANCES=[], CC_ITEMS=[];
+let SALES=[], RETURNS=[], EXPENSES=[], STOCK=[], CASHIN=[], ZONE=[], PROFILES=[], DELREQS=[], EDITREQS=[], EMPLOYEES=[], SALARY=[], CCORDERS=[], ATTEND=[], ADVANCES=[], CC_ITEMS=[], CC_COMM=[];
 let APP_SETTINGS={};
 
 function applyBizFilter(){
@@ -1077,7 +1088,7 @@ async function loadAll(){
     ALL_SALES=s.data||[]; ALL_RETURNS=r.data||[]; ALL_EXPENSES=e.data||[]; ALL_STOCK=stk.data||[];
     ALL_ZONE = zn.error ? [] : (zn.data||[]);
     if(CURRENT_PROFILE && CURRENT_PROFILE.role==='admin'){
-      const [pr,dr,er,ci,emp,sal,cc,att,adv,ccit,setg]=await Promise.all([
+      const [pr,dr,er,ci,emp,sal,cc,att,adv,ccit,setg,ccm]=await Promise.all([
         db.from('profiles').select('*').order('created_at',{ascending:true}),
         db.from('delete_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
         db.from('edit_requests').select('*').eq('status','pending').order('created_at',{ascending:false}),
@@ -1089,6 +1100,7 @@ async function loadAll(){
         db.from('hisab_advances').select('*').order('adv_date',{ascending:false}).order('id',{ascending:false}),
         db.from('cc_order_items').select('*'),
         db.from('app_settings').select('*'),
+        db.from('cc_commission').select('*'),
       ]);
       PROFILES=pr.data||[]; DELREQS=dr.data||[]; EDITREQS=er.data||[];
       ALL_CASHIN=ci.data||[]; EMPLOYEES=emp.data||[]; SALARY=sal.data||[];
@@ -1096,20 +1108,23 @@ async function loadAll(){
       ATTEND = att.error ? [] : (att.data||[]);
       ADVANCES = adv.error ? [] : (adv.data||[]);
       CC_ITEMS = ccit.error ? [] : (ccit.data||[]);
+      CC_COMM = ccm.error ? [] : (ccm.data||[]);
       APP_SETTINGS={}; if(!setg.error) (setg.data||[]).forEach(r=>APP_SETTINGS[r.skey]=r.sval);
     } else if(CURRENT_PROFILE && CURRENT_PROFILE.cc_role && CURRENT_PROFILE.cc_role!=='none'){
       // কল সেন্টার এজেন্ট (non-admin) — শুধু এজেন্ট ফিচারের ডেটা
-      const [cc,ccit,setg,pr,att]=await Promise.all([
+      const [cc,ccit,setg,pr,att,ccm]=await Promise.all([
         db.from('cc_orders').select('*').order('confirm_date',{ascending:false}),
         db.from('cc_order_items').select('*'),
         db.from('app_settings').select('*'),
         db.from('profiles').select('id,name,email,cc_role,role'),
         db.from('hisab_attendance').select('*'),
+        db.from('cc_commission').select('*'),
       ]);
       CCORDERS = cc.error ? [] : (cc.data||[]);
       CC_ITEMS = ccit.error ? [] : (ccit.data||[]);
       PROFILES = pr.error ? PROFILES : (pr.data||[]);
       ATTEND = att.error ? [] : (att.data||[]);
+      CC_COMM = ccm.error ? [] : (ccm.data||[]);
       APP_SETTINGS={}; if(!setg.error) (setg.data||[]).forEach(r=>APP_SETTINGS[r.skey]=r.sval);
     }
     applyBizFilter();
@@ -1670,6 +1685,9 @@ function graceMin(){ return (APP_SETTINGS.grace!==undefined&&APP_SETTINGS.grace!
 function timeToMin(t){ if(!t) return null; const p=String(t).split(':'); return (+p[0])*60+(+(p[1]||0)); }
 // এজেন্ট ও অর্ডার হেল্পার
 function ccAgents(){ return PROFILES.filter(p=>['agent','leader','admin'].includes(p.cc_role)||p.role==='admin'); }
+// মাস শেষে অ্যাডমিনের বসানো ডেলিভারড-কনভার্ট সংখ্যা → কমিশন
+function monthlyDelivConvert(agentId, ym){ const r=CC_COMM.find(x=>String(x.agent_id)===String(agentId) && x.ym===ym); return r?n(r.deliv_convert):0; }
+function monthlyCommission(agentId, ym){ return monthlyDelivConvert(agentId,ym)*commRate(); }
 function itemsOf(oid){ return CC_ITEMS.filter(it=>String(it.order_id)===String(oid)); }
 function orderQty(o){ return itemsOf(o.id).reduce((s,it)=>s+n(it.qty),0); }
 function orderTotal(o){ return itemsOf(o.id).reduce((s,it)=>s+n(it.qty)*n(it.price),0); }
@@ -1722,7 +1740,26 @@ function renderAgent(){
   if($('ag_items')&&!$('ag_items').children.length) agAddItem();
   renderAgToday();
   renderAgReport();
-  if(isAdmin){ fillSettings(); renderAgentAccess(); }
+  if(isAdmin){ fillSettings(); renderAgentAccess(); renderCommPanel(); }
+}
+
+// মাস শেষ কমিশন প্যানেল (admin)
+function renderCommPanel(){
+  const box=$('commList'); if(!box) return;
+  if($('comm_month')&&!$('comm_month').value) $('comm_month').value=monthStr();
+  const ym=($('comm_month')?$('comm_month').value:'')||monthStr();
+  const ags=ccAgents();
+  if(!ags.length){ box.innerHTML='<div class="empty">কোনো এজেন্ট নেই। সেটিংস → অ্যাক্সেসে role দিন।</div>'; return; }
+  box.innerHTML=`<div class="infobar" style="margin-bottom:10px">${niceMonth(ym)} — কনভার্ট অর্ডার কয়টা ডেলিভারি হয়েছে বসান (প্রতি পিস ${commRate()}৳)</div>`+
+   ags.map(p=>{ const st=agStats(monthOrders(p.id,ym)); const dc=monthlyDelivConvert(p.id,ym);
+    return `<div class="item" style="align-items:center"><div>
+        <div class="t">${p.name||p.email||'এজেন্ট'}</div>
+        <div class="m">কনফার্ম ${st.conf} · কনভার্ট <b>${st.conv}</b></div>
+      </div><div style="display:flex;align-items:center;gap:10px">
+        <input type="number" class="comm-inp" data-agent="${p.id}" min="0" step="1" value="${dc}" style="width:90px" placeholder="ডেলিভারড">
+        <div class="amt" style="min-width:70px">${money(dc*commRate())}</div>
+      </div></div>`;
+   }).join('');
 }
 
 function renderAgToday(){
@@ -1750,7 +1787,7 @@ function renderAgToday(){
         <div class="m">${o.agent_name||''}${o.customer_name?' · '+o.customer_name:''}${o.address?' · '+o.address:''}</div>
         <div class="m">${prodTxt}${o.note?' · 📝 '+o.note:''}</div>
       </div><div style="text-align:right">
-        <div class="amt">${money(orderTotal(o))}</div>
+        ${isAdmin?`<div class="amt">${money(orderTotal(o))}</div>`:''}
         <div class="m">${orderQty(o)} পিস</div>
         ${marks}
         ${canMark?`<button class="del" data-t="cc_orders" data-id="${o.id}">মুছুন</button>`:''}
@@ -1844,13 +1881,13 @@ function renderAgReport(){
   const agentId=$('ag_repAgent')?$('ag_repAgent').value:'';
   const ym=($('ag_repMonth')?$('ag_repMonth').value:'')||monthStr();
   if(!agentId){
-    const rows=ccAgents().map(p=>({name:p.name||p.email,st:agStats(monthOrders(p.id,ym))}))
-      .filter(r=>r.st.conf>0).sort((a,b)=>b.st.deliv-a.st.deliv);
+    const rows=ccAgents().map(p=>({id:p.id,name:p.name||p.email,st:agStats(monthOrders(p.id,ym)),comm:monthlyCommission(p.id,ym),dc:monthlyDelivConvert(p.id,ym)}))
+      .filter(r=>r.st.conf>0).sort((a,b)=>b.comm-a.comm||b.st.conv-a.st.conv);
     if(!rows.length){ box.innerHTML=`<div class="empty">${niceMonth(ym)} — কোনো অর্ডার নেই।</div>`; return; }
-    box.innerHTML=`<div class="infobar" style="margin:12px 0">${niceMonth(ym)} — এজেন্ট লিডারবোর্ড (ডেলিভারড অনুযায়ী)</div>`+rows.map((r,i)=>`<div class="item"><div>
+    box.innerHTML=`<div class="infobar" style="margin:12px 0">${niceMonth(ym)} — এজেন্ট লিডারবোর্ড (কমিশন অনুযায়ী)</div>`+rows.map((r,i)=>`<div class="item"><div>
         <div class="t">${i+1}. ${r.name}</div>
-        <div class="m">কনফার্ম ${r.st.conf} · ডেলিভারড ${r.st.deliv} · ক্যান্সেল ${r.st.canc} · কনভার্সন ${r.st.convRate}%</div>
-      </div><div style="text-align:right"><div class="amt">${money(r.st.comm)}</div><div class="m">কমিশন</div></div></div>`).join('');
+        <div class="m">কনফার্ম ${r.st.conf} · কনভার্ট ${r.st.conv} · ডেলিভারড-কনভার্ট ${r.dc} · কনভার্সন ${r.st.convRate}%</div>
+      </div><div style="text-align:right"><div class="amt">${money(r.comm)}</div><div class="m">কমিশন</div></div></div>`).join('');
     return;
   }
   const ag=PROFILES.find(p=>p.id===agentId), agName=ag?(ag.name||ag.email):'';
@@ -1858,54 +1895,55 @@ function renderAgReport(){
   const cur=agStats(monthOrders(agentId,ym)), prev=agStats(monthOrders(agentId,prevYm));
   const bonus=agAttBonus(agName, ym);
   const today=agDayStats(agentId, todayStr());
-  const diff=cur.rev-prev.rev, pct=prev.rev>0?Math.round(diff/prev.rev*100):(cur.rev>0?100:0), up=diff>=0;
+  // কমিশন = অ্যাডমিনের বসানো মাসিক ডেলিভারড-কনভার্ট × রেট (টাকা নয়, সংখ্যা ভিত্তিক)
+  const dcCur=monthlyDelivConvert(agentId,ym), dcPrev=monthlyDelivConvert(agentId,prevYm);
+  const commCur=dcCur*commRate(), commPrev=dcPrev*commRate();
+  // এই মাস vs গত মাস — কনভার্ট অর্ডার (সংখ্যা)
+  const diff=cur.conv-prev.conv, pct=prev.conv>0?Math.round(diff/prev.conv*100):(cur.conv>0?100:0), up=diff>=0;
   const arrow=up?'▲':'▼', col=up?'var(--profit)':'var(--loss)';
-  const cmx=Math.max(1,cur.rev,prev.rev);
+  const cmx=Math.max(1,cur.conv,prev.conv);
   const cmpBars=`<div style="margin:6px 0 2px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(ym)} (এই মাস)</span><span style="font-weight:700">${money(cur.rev)}</span></div>
-      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(cur.rev/cmx*100))}%"></div></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(ym)} (এই মাস)</span><span style="font-weight:700">${cur.conv} টি</span></div>
+      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(cur.conv/cmx*100))}%"></div></div></div>
     <div style="margin:10px 0 2px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(prevYm)} (গত মাস)</span><span style="font-weight:700;color:var(--muted)">${money(prev.rev)}</span></div>
-      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(prev.rev/cmx*100))}%;background:var(--muted);opacity:.55"></div></div></div>`;
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(prevYm)} (গত মাস)</span><span style="font-weight:700;color:var(--muted)">${prev.conv} টি</span></div>
+      <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(prev.conv/cmx*100))}%;background:var(--muted);opacity:.55"></div></div></div>`;
   const prodMap={};
-  monthOrders(agentId,ym).filter(isDelivered).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
+  monthOrders(agentId,ym).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
   const prodPairs=Object.keys(prodMap).map(k=>({label:k,val:prodMap[k],sub:prodMap[k]+' পিস'})).sort((a,b)=>b.val-a.val).slice(0,6);
   const ser=dailyOrderSeries(agentId,ym);
-  const dChip=(v)=>`<div class="delta" style="color:${v>=0?'var(--profit)':'var(--loss)'}">${v>=0?'▲':'▼'} গত মাসের চেয়ে ${Math.abs(v)}</div>`;
-  const dConf=cur.conf-prev.conf, dDeliv=cur.deliv-prev.deliv, dPend=cur.pend-prev.pend, dComm=cur.comm-prev.comm;
-  // সাম্প্রতিক অর্ডার (এই মাস)
+  const dChip=(v,suffix)=>`<div class="delta" style="color:${v>=0?'var(--profit)':'var(--loss)'}">${v>=0?'▲':'▼'} গত মাসের চেয়ে ${Math.abs(v)}${suffix||''}</div>`;
+  const dConf=cur.conf-prev.conf, dConv=cur.conv-prev.conv, dPend=cur.pend-prev.pend, dComm=commCur-commPrev;
   const recent=monthOrders(agentId,ym).slice(0,5);
-  const stBadge=st=>st==='Delivered'?'<span class="badge oh">ডেলিভারড</span>':st==='Cancelled'?'<span class="badge ot">ক্যান্সেল</span>':'<span class="badge" style="background:#fff4e0;color:#9a6a00">পেন্ডিং</span>';
+  const tBadge=o=>(o.order_type||'regular')==='convert'?'<span class="badge" style="background:#e8e2ff;color:#6a43c8">কনভার্ট</span>':'<span class="badge" style="background:#eef1f3;color:#5b7075">রেগুলার</span>';
   box.innerHTML=`
    <div class="dashhead">
      <div><h3>স্বাগতম, ${agName} 👋</h3><div class="sub">${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
      <div class="infobar" style="margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
-       📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.conv}</b> · ডেলিভারড <b>${today.deliv}</b> · কমিশন <b>${money(today.comm)}</b>
+       📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.conv}</b>
      </div>
    </div>
    <div class="statgrid">
      <div class="statcard sc-blue"><div class="ico">🧾</div><div class="num">${cur.conf}</div><div class="cap">কনফার্ম অর্ডার</div>${dChip(dConf)}</div>
-     <div class="statcard sc-green"><div class="ico">✅</div><div class="num">${cur.deliv}</div><div class="cap">ডেলিভারড (কনভার্ট ${cur.conv})</div>${dChip(dDeliv)}</div>
-     <div class="statcard sc-amber"><div class="ico">⏳</div><div class="num">${cur.pend}</div><div class="cap">পেন্ডিং</div>${dChip(dPend)}</div>
-     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(cur.comm)}</div><div class="cap">কমিশন (কনভার্ট ${cur.commPcs} পিস × ${commRate()}৳)</div>${dChip(dComm)}</div>
+     <div class="statcard sc-green"><div class="ico">⭐</div><div class="num">${cur.conv}</div><div class="cap">কনভার্ট অর্ডার</div>${dChip(dConv)}</div>
+     <div class="statcard sc-amber"><div class="ico">📦</div><div class="num">${dcCur}</div><div class="cap">ডেলিভারড কনভার্ট (অ্যাডমিন যাচাই)</div></div>
+     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(commCur)}</div><div class="cap">কমিশন (${dcCur} × ${commRate()}৳)</div>${dChip(dComm,'৳')}</div>
    </div>
    <div class="chartrow">
      <div class="panelbox"><h4>অর্ডার ওভারভিউ <span style="font-weight:500;color:var(--muted);font-size:12px">· ${niceMonth(ym)} দৈনিক কনফার্ম</span></h4>${lineChart(ser.vals,ser.labels)}</div>
-     <div class="panelbox"><h4>স্ট্যাটাস অনুযায়ী</h4>${donutChart([
-        {label:'ডেলিভারড',val:cur.deliv,color:'#18a558'},
-        {label:'পেন্ডিং',val:cur.pend,color:'#e0a500'},
-        {label:'ক্যান্সেল',val:cur.canc,color:'#d6447a'}
+     <div class="panelbox"><h4>অর্ডার টাইপ</h4>${donutChart([
+        {label:'কনভার্ট',val:cur.conv,color:'#6a43c8'},
+        {label:'রেগুলার',val:cur.conf-cur.conv,color:'#8aa0a6'}
       ])}</div>
    </div>
    <div class="chartrow">
      <div class="panelbox">
-       <h4>🏆 সবচেয়ে বেশি বিক্রি হওয়া প্রোডাক্ট</h4>${barList(prodPairs)}
+       <h4>🏆 সবচেয়ে বেশি অর্ডার হওয়া প্রোডাক্ট</h4>${barList(prodPairs)}
      </div>
      <div class="panelbox">
-       <h4>এই মাস vs গত মাস — বিক্রি <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></h4>
+       <h4>এই মাস vs গত মাস — কনভার্ট অর্ডার <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></h4>
        ${cmpBars}
        <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px">
-         <span>কনভার্সন রেট <b>${cur.convRate}%</b></span>
          <span>হাজিরা বোনাস <b>${bonus.has?(bonus.eligible?money(bonus.amt)+' ✓':'অযোগ্য'):'—'}</b></span>
        </div>
      </div>
@@ -1913,9 +1951,9 @@ function renderAgReport(){
    <div class="panelbox">
      <h4>সাম্প্রতিক অর্ডার</h4>
      ${recent.length?recent.map(o=>`<div class="item"><div>
-         <div class="t">${o.customer_number||''} ${stBadge(o.status||'Pending')}</div>
+         <div class="t">${o.customer_number||''} ${tBadge(o)}</div>
          <div class="m">${niceDate(o.confirm_date)} · ${itemsOf(o.id).map(it=>it.product+' ('+it.qty+')').join(', ')||'—'}</div>
-       </div><div style="text-align:right"><div class="amt">${money(orderTotal(o))}</div></div></div>`).join(''):'<div class="empty">এই মাসে কোনো অর্ডার নেই।</div>'}
+       </div><div style="text-align:right"><div class="m">${orderQty(o)} পিস</div></div></div>`).join(''):'<div class="empty">এই মাসে কোনো অর্ডার নেই।</div>'}
    </div>`;
 }
 
@@ -2002,6 +2040,20 @@ document.addEventListener('click',async(ev)=>{
   if(error){ toast('হয়নি: '+(error.message||''),true); return; }
   toast('স্ট্যাটাস আপডেট ✓'); await loadAll();
 });
+// মাস শেষ কমিশন — লাইভ আপডেট ও সেভ
+{ const cm=$('comm_month'); if(cm) cm.addEventListener('change',renderCommPanel);
+  const cl=$('commList'); if(cl) cl.addEventListener('input',e=>{ const inp=e.target.closest('.comm-inp'); if(!inp) return;
+    const amt=inp.closest('.item').querySelector('.amt'); if(amt) amt.textContent=money((n(inp.value))*commRate()); }); }
+if($('comm_save')) $('comm_save').onclick=async()=>{
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const b=$('comm_save'); b.disabled=true;
+  const ym=($('comm_month')?$('comm_month').value:'')||monthStr();
+  const rows=[...document.querySelectorAll('#commList .comm-inp')].map(inp=>({ agent_id:inp.dataset.agent, ym, deliv_convert:n(inp.value) }));
+  const {error}=await db.from('cc_commission').upsert(rows,{onConflict:'agent_id,ym'});
+  b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  toast('কমিশন সেভ হয়েছে ✓'); await loadAll();
+};
 // সেটিংস সেভ
 if($('set_save')) $('set_save').onclick=async()=>{
   if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
