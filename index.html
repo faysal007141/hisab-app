@@ -94,6 +94,11 @@
   #bizSwitch .bizbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
   .rbtn{background:var(--surface-2);border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:600;padding:7px 14px;border-radius:9px;cursor:pointer}
   .rbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .subnav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .subbtn{background:var(--surface);border:1px solid var(--line);color:var(--muted);font-family:inherit;font-size:14px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer}
+  .subbtn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .subpanel{display:none}
+  .subpanel.active{display:block}
   .dbar{height:9px;border-radius:5px;background:var(--primary);min-width:3px}
   .dbar-track{background:var(--surface-2);border-radius:5px;overflow:hidden;flex:1}
   main{max-width:920px;margin:0 auto;padding:18px 14px 60px}
@@ -525,51 +530,67 @@
 
   <!-- ============ SALARY ============ -->
   <section class="panel" id="panel-salary">
-    <div class="card">
-      <h2>কর্মচারী যোগ করুন<span class="sub">নাম, জয়েন ডেট, মাসিক বেতন</span></h2>
-      <div class="grid">
-        <div class="field"><label>নাম</label><input type="text" id="emp_name" placeholder="কর্মচারীর নাম"></div>
-        <div class="field"><label>জয়েন ডেট</label><input type="date" id="emp_join"></div>
-      </div>
-      <div class="field"><label>মাসিক বেতন ৳</label><input type="number" id="emp_salary" min="0" step="0.01" placeholder="0"></div>
-      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="emp_note" placeholder="যেমন: পদবি / মোবাইল"></div>
-      <button class="btn" id="emp_save">কর্মচারী যোগ করুন</button>
+    <div class="subnav" id="salSubnav">
+      <button class="subbtn active" data-sub="emp">👤 কর্মচারী যোগ করুন</button>
+      <button class="subbtn" data-sub="adv">💵 অগ্রিম দিন</button>
+      <button class="subbtn" data-sub="pay">🧾 বেতন পরিশোধ</button>
+      <button class="subbtn" data-sub="rec">📋 বেতন রেকর্ড</button>
     </div>
-    <div class="card"><h2>কর্মচারী তালিকা</h2><div class="list" id="empList"><div class="empty">লোড হচ্ছে…</div></div></div>
 
-    <div class="card">
-      <h2>অগ্রিম দিন<span class="sub">মাসের মাঝে কাউকে অগ্রিম দিলে এখানে বসান — বেতনের সময় নিজে থেকে বাদ যাবে</span></h2>
-      <div class="grid">
-        <div class="field"><label>কর্মচারী</label><select id="adv_emp"><option value="">— বাছুন —</option></select></div>
-        <div class="field"><label>তারিখ</label><input type="date" id="adv_date"></div>
+    <div class="subpanel active" data-sub="emp">
+      <div class="card">
+        <h2>কর্মচারী যোগ করুন<span class="sub">নাম, জয়েন ডেট, মাসিক বেতন</span></h2>
+        <div class="grid">
+          <div class="field"><label>নাম</label><input type="text" id="emp_name" placeholder="কর্মচারীর নাম"></div>
+          <div class="field"><label>জয়েন ডেট</label><input type="date" id="emp_join"></div>
+        </div>
+        <div class="field"><label>মাসিক বেতন ৳</label><input type="number" id="emp_salary" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="emp_note" placeholder="যেমন: পদবি / মোবাইল"></div>
+        <button class="btn" id="emp_save">কর্মচারী যোগ করুন</button>
       </div>
-      <div class="grid">
-        <div class="field"><label>অগ্রিম টাকা ৳</label><input type="number" id="adv_amount" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="adv_note" placeholder="মন্তব্য"></div>
-      </div>
-      <button class="btn" id="adv_save">অগ্রিম যোগ করুন</button>
+      <div class="card"><h2>কর্মচারী তালিকা</h2><div class="list" id="empList"><div class="empty">লোড হচ্ছে…</div></div></div>
     </div>
-    <div class="card"><h2>অগ্রিমের তালিকা <span class="sub">মাস ও কর্মচারী অনুযায়ী মোট নিচে বেতনে বাদ যাবে</span></h2><div class="list" id="advList"><div class="empty">লোড হচ্ছে…</div></div></div>
 
-    <div class="card">
-      <h2>বেতন পরিশোধ<span class="sub">অগ্রিম বাদে হাতে পাবে কত — নিজে থেকে হিসাব হবে</span></h2>
-      <div class="grid">
-        <div class="field"><label>কর্মচারী</label><select id="sal_emp"><option value="">— বাছুন —</option></select></div>
-        <div class="field"><label>মাস</label><input type="month" id="sal_month"></div>
+    <div class="subpanel" data-sub="adv">
+      <div class="card">
+        <h2>অগ্রিম দিন<span class="sub">মাসের মাঝে কাউকে অগ্রিম দিলে এখানে বসান — বেতনের সময় নিজে থেকে বাদ যাবে</span></h2>
+        <div class="grid">
+          <div class="field"><label>কর্মচারী</label><select id="adv_emp"><option value="">— বাছুন —</option></select></div>
+          <div class="field"><label>তারিখ</label><input type="date" id="adv_date"></div>
+        </div>
+        <div class="grid">
+          <div class="field"><label>অগ্রিম টাকা ৳</label><input type="number" id="adv_amount" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="adv_note" placeholder="মন্তব্য"></div>
+        </div>
+        <button class="btn" id="adv_save">অগ্রিম যোগ করুন</button>
       </div>
-      <div class="grid">
-        <div class="field"><label>মোট বেতন ৳</label><input type="number" id="sal_amount" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label>বোনাস ৳</label><input type="number" id="sal_bonus" min="0" step="0.01" placeholder="0"></div>
-      </div>
-      <div class="grid">
-        <div class="field"><label>অগ্রিম নিয়েছে ৳</label><input type="number" id="sal_adv" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label>পরিশোধের তারিখ</label><input type="date" id="sal_date"></div>
-      </div>
-      <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="sal_note" placeholder="মন্তব্য"></div>
-      <div class="formula" id="sal_net">হাতে পাবে: ৳0</div>
-      <button class="btn" id="sal_save" style="margin-top:10px">বেতন রেকর্ড করুন</button>
+      <div class="card"><h2>অগ্রিমের তালিকা <span class="sub">মাস ও কর্মচারী অনুযায়ী মোট বেতনে বাদ যাবে</span></h2><div class="list" id="advList"><div class="empty">লোড হচ্ছে…</div></div></div>
     </div>
-    <div class="card"><h2>বেতন রেকর্ড</h2><div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div></div>
+
+    <div class="subpanel" data-sub="pay">
+      <div class="card">
+        <h2>বেতন পরিশোধ<span class="sub">অগ্রিম বাদে হাতে পাবে কত — নিজে থেকে হিসাব হবে</span></h2>
+        <div class="grid">
+          <div class="field"><label>কর্মচারী</label><select id="sal_emp"><option value="">— বাছুন —</option></select></div>
+          <div class="field"><label>মাস</label><input type="month" id="sal_month"></div>
+        </div>
+        <div class="grid">
+          <div class="field"><label>মোট বেতন ৳</label><input type="number" id="sal_amount" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label>বোনাস ৳</label><input type="number" id="sal_bonus" min="0" step="0.01" placeholder="0"></div>
+        </div>
+        <div class="grid">
+          <div class="field"><label>অগ্রিম নিয়েছে ৳</label><input type="number" id="sal_adv" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label>পরিশোধের তারিখ</label><input type="date" id="sal_date"></div>
+        </div>
+        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="sal_note" placeholder="মন্তব্য"></div>
+        <div class="formula" id="sal_net">হাতে পাবে: ৳0</div>
+        <button class="btn" id="sal_save" style="margin-top:10px">বেতন রেকর্ড করুন</button>
+      </div>
+    </div>
+
+    <div class="subpanel" data-sub="rec">
+      <div class="card"><h2>বেতন রেকর্ড</h2><div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div></div>
+    </div>
   </section>
 
   <!-- ============ ATTENDANCE (হাজিরা) ============ -->
@@ -1692,7 +1713,21 @@ document.querySelectorAll('.tab').forEach(t=>{ t.onclick=()=>{
   if(t.dataset.tab==='agent') renderAgent();
   if(t.dataset.tab==='zone'){ if($('z_date')&&!$('z_date').value) $('z_date').value=todayStr(); renderZone(); }
   if(t.dataset.tab==='attend'){ if($('att_date')&&!$('att_date').value) $('att_date').value=todayStr(); renderAttend(); }
+  applyTopBars();
   sidebarToggle(false);
+};});
+// বেতন/হাজিরা ট্যাবে উপরের সামারি ও ব্যবসা-সুইচ লুকানো (অপ্রাসঙ্গিক)
+function applyTopBars(){
+  const active=document.querySelector('.tab.active'); const tab=active?active.dataset.tab:'';
+  const hideTop = (tab==='salary'||tab==='attend');
+  const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role==='admin';
+  const sb=$('summaryBox'); if(sb) sb.style.display=(isAdmin&&!hideTop)?'':'none';
+  const bz=$('bizSwitch'); if(bz){ const multi=(typeof allowedBusinesses==='function'?allowedBusinesses().length>1:true); bz.style.display=(!hideTop&&multi)?'flex':'none'; }
+}
+// বেতন সেকশনের সাব-ট্যাব
+document.querySelectorAll('#salSubnav .subbtn').forEach(b=>{ b.onclick=()=>{
+  document.querySelectorAll('#salSubnav .subbtn').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('#panel-salary .subpanel').forEach(p=>p.classList.toggle('active', p.dataset.sub===b.dataset.sub));
 };});
 function sidebarToggle(open){ const sb=$('sidebar'), ov=$('sideovl'); if(!sb) return; const show = (open===undefined)? !sb.classList.contains('open') : open; sb.classList.toggle('open',show); if(ov) ov.classList.toggle('show',show); }
 { const hb=$('hamb'); if(hb) hb.onclick=()=>sidebarToggle(); const ov=$('sideovl'); if(ov) ov.onclick=()=>sidebarToggle(false); }
@@ -2607,6 +2642,7 @@ function applyPermissions(){
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   if(first){ const ft=document.querySelector(`.tab[data-tab="${first}"]`); ft.classList.add('active'); $('panel-'+first).classList.add('active'); const tt=$('tbTitle'); if(tt) tt.textContent=(ft.textContent||'').trim(); }
   $('whoami').textContent = (p.name||p.email||'') + (isAdmin?' (admin)':'');
+  if(typeof applyTopBars==='function') applyTopBars();
 }
 
 function setBizTheme(){ document.body.setAttribute('data-biz', CURRENT_BIZ); }
@@ -2621,6 +2657,7 @@ function setupBizSwitch(){
   });
   $('bizSwitch').style.display = allow.length>1 ? 'flex' : 'none';
   setBizTheme();
+  if(typeof applyTopBars==='function') applyTopBars();
 }
 document.querySelectorAll('.bizbtn').forEach(b=>{ b.onclick=()=>{
   CURRENT_BIZ=b.dataset.biz; setBizTheme();
