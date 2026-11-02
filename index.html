@@ -1813,7 +1813,6 @@ function monthOrders(agentId, ym){
 function monthOrdersAll(agentId, ym){
   return CCORDERS.filter(o=> monthOf(o.confirm_date)===ym && (!agentId||o.agent_id===agentId));
 }
-const bizLabel = b => (BIZ[b]?BIZ[b].label:(b||''));
 // কনভার্ট অর্ডারের নম্বর CSV এক্সপোর্ট (কুরিয়ার ডেটার সাথে মেলানোর জন্য)
 function exportConvertCSV(agentId, ym){
   const ag=PROFILES.find(p=>p.id===agentId), nm=ag?(ag.name||ag.email||'agent'):'agent';
