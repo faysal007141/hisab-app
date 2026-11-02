@@ -1958,7 +1958,7 @@ function renderAgReport(){
   const tBadge=o=>(o.order_type||'regular')==='convert'?'<span class="badge" style="background:#e8e2ff;color:#6a43c8">কনভার্ট</span>':'<span class="badge" style="background:#eef1f3;color:#5b7075">রেগুলার</span>';
   box.innerHTML=`
    <div class="dashhead">
-     <div><h3>স্বাগতম, ${agName} 👋 <span class="badge" style="background:var(--primary);color:#fff;font-size:12px;vertical-align:middle">${bizLabel(CURRENT_BIZ)}</span></h3><div class="sub"><b>${bizLabel(CURRENT_BIZ)}</b> · ${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
+     <div><h3>${bizLabel(CURRENT_BIZ)} 👋</h3><div class="sub">${agName} · ${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
      <div class="infobar" style="margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
        📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.conv}</b>
      </div>
