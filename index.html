@@ -1701,10 +1701,12 @@ function fillAgentSel(id, includeAll){
   let list=ccAgents();
   if(!isAdmin && !isLeader) list=list.filter(p=>p.id===(me&&me.id));
   const prev=el.value;
-  let opts=(includeAll?'<option value="">— সব এজেন্ট —</option>':'');
+  // এজেন্ট/লিডার শুধু নিজের ডেটা দেখে — তাদের জন্য "সব এজেন্ট" অপশন নেই
+  const showAll = includeAll && isAdmin;
+  let opts=(showAll?'<option value="">— সব এজেন্ট —</option>':'');
   opts+=list.map(p=>`<option value="${p.id}">${p.name||p.email||'এজেন্ট'}</option>`).join('');
   el.innerHTML=opts;
-  el.value = prev || (includeAll?'':((me&&me.id)||''));
+  el.value = prev || (showAll?'':((me&&me.id)||''));
 }
 
 // ডায়নামিক প্রোডাক্ট সারি
