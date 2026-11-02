@@ -18,9 +18,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          # আপনার hisab ফোল্ডারের পথ। মূল cPanel FTP হলে সাধারণত এটাই।
-          # FTP account যদি hisab ফোল্ডারেই scoped হয়, তাহলে ./ করে দিন।
-          server-dir: public_html/hisab/
+          # FTP account সরাসরি hisab ফোল্ডারে scoped (Directory: digigatebd.com/hisab)
+          server-dir: ./
           exclude: |
             **/.git*
             **/.git*/**
