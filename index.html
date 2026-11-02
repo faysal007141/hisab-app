@@ -867,14 +867,14 @@
   <!-- ============ AGENT (call center) ============ -->
   <section class="panel" id="panel-agent">
     <div class="subnav" id="agSubnav">
-      <button class="subbtn active" data-sub="entry">🧾 অর্ডার কনফার্ম</button>
+      <button class="subbtn active" data-sub="report">📊 এজেন্ট রিপোর্ট</button>
+      <button class="subbtn" data-sub="entry">🧾 অর্ডার কনফার্ম</button>
       <button class="subbtn" data-sub="today">📋 অর্ডার তালিকা</button>
-      <button class="subbtn" data-sub="report">📊 এজেন্ট রিপোর্ট</button>
       <button class="subbtn agadmin" data-sub="settings">⚙️ সেটিংস</button>
     </div>
 
     <!-- অর্ডার কনফার্ম -->
-    <div class="subpanel active" data-sub="entry">
+    <div class="subpanel" data-sub="entry">
       <div class="card">
         <h2>অর্ডার কনফার্ম <span class="sub">কাস্টমার নম্বর, প্রোডাক্ট, পিস ও দাম বসিয়ে কনফার্ম করুন</span></h2>
         <div class="grid">
@@ -886,6 +886,12 @@
           <div class="field"><label>কাস্টমারের নাম (ঐচ্ছিক)</label><input type="text" id="ag_cname" placeholder="নাম" autocomplete="off"></div>
         </div>
         <div class="field"><label>ঠিকানা / এলাকা (ঐচ্ছিক)</label><input type="text" id="ag_addr" placeholder="যেমন: কুমিল্লা" autocomplete="off"></div>
+        <div class="field"><label>অর্ডার টাইপ</label>
+          <select id="ag_type">
+            <option value="regular">রেগুলার (কমিশন নেই)</option>
+            <option value="convert">কনভার্ট (ডেলিভারি হলে কমিশন)</option>
+          </select>
+        </div>
         <label style="font-weight:600;font-size:13px;color:var(--muted);display:block;margin:10px 0 6px">প্রোডাক্ট (একাধিক দেওয়া যাবে)</label>
         <div id="ag_items"></div>
         <button class="btn ghost" id="ag_additem" type="button" style="width:auto;padding:8px 14px;font-size:13.5px;margin-top:2px">+ আরেকটা প্রোডাক্ট</button>
@@ -905,7 +911,7 @@
     </div>
 
     <!-- এজেন্ট রিপোর্ট -->
-    <div class="subpanel" data-sub="report">
+    <div class="subpanel active" data-sub="report">
       <div class="card">
         <h2>এজেন্ট পারফরম্যান্স <span class="sub">মাসভিত্তিক বিস্তারিত — এই মাস vs গত মাস, বেস্ট প্রোডাক্ট, কমিশন</span></h2>
         <div class="grid">
@@ -1738,8 +1744,9 @@ function renderAgToday(){
         <button class="btn ghost ag-mark" data-id="${o.id}" data-st="Cancelled" style="width:auto;padding:5px 11px;font-size:12px;color:var(--loss);border-color:var(--loss)">ক্যান্সেল</button>
         <button class="btn ghost ag-mark" data-id="${o.id}" data-st="Pending" style="width:auto;padding:5px 11px;font-size:12px">পেন্ডিং</button>
       </div>`:'';
+    const typeBadge=(o.order_type||'regular')==='convert'?'<span class="badge" style="background:#e8e2ff;color:#6a43c8">কনভার্ট</span>':'';
     return `<div class="item" style="align-items:flex-start"><div>
-        <div class="t">${o.customer_number||''} ${badge}</div>
+        <div class="t">${o.customer_number||''} ${badge}${typeBadge}</div>
         <div class="m">${o.agent_name||''}${o.customer_name?' · '+o.customer_name:''}${o.address?' · '+o.address:''}</div>
         <div class="m">${prodTxt}${o.note?' · 📝 '+o.note:''}</div>
       </div><div style="text-align:right">
@@ -1755,15 +1762,17 @@ function monthOrders(agentId, ym){
   return CCORDERS.filter(o=> monthOf(o.confirm_date)===ym && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ);
 }
 function agStats(orders){
-  let conf=orders.length, deliv=0, canc=0, pend=0, pcs=0, rev=0, comm=0; const prod={};
+  let conf=orders.length, deliv=0, canc=0, pend=0, pcs=0, commPcs=0, conv=0, rev=0, comm=0; const prod={};
   orders.forEach(o=>{
     const st=o.status||'Pending';
-    if(st==='Delivered'){ const q=orderQty(o); deliv++; pcs+=q; rev+=orderTotal(o); comm+=q*commRate();
+    if((o.order_type||'regular')==='convert') conv++;
+    if(st==='Delivered'){ const q=orderQty(o); deliv++; pcs+=q; rev+=orderTotal(o);
+      if((o.order_type||'regular')==='convert'){ commPcs+=q; comm+=q*commRate(); } // শুধু কনভার্ট অর্ডারে কমিশন
       itemsOf(o.id).forEach(it=>{ prod[it.product]=(prod[it.product]||0)+n(it.qty); });
     } else if(st==='Cancelled') canc++; else pend++;
   });
   const best=Object.keys(prod).sort((a,b)=>prod[b]-prod[a])[0];
-  return {conf,deliv,canc,pend,pcs,rev,comm,best,bestQty:best?prod[best]:0,convRate:conf?Math.round(deliv/conf*100):0};
+  return {conf,deliv,canc,pend,pcs,commPcs,conv,rev,comm,best,bestQty:best?prod[best]:0,convRate:conf?Math.round(deliv/conf*100):0};
 }
 function agAttBonus(agName, ym){
   const recs=ATTEND.filter(a=>(a.emp_name||'')===agName && monthOf(a.att_date)===ym);
@@ -1871,14 +1880,14 @@ function renderAgReport(){
    <div class="dashhead">
      <div><h3>স্বাগতম, ${agName} 👋</h3><div class="sub">${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
      <div class="infobar" style="margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
-       📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.deliv}</b> · কমিশন <b>${money(today.comm)}</b>
+       📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.conv}</b> · ডেলিভারড <b>${today.deliv}</b> · কমিশন <b>${money(today.comm)}</b>
      </div>
    </div>
    <div class="statgrid">
      <div class="statcard sc-blue"><div class="ico">🧾</div><div class="num">${cur.conf}</div><div class="cap">কনফার্ম অর্ডার</div>${dChip(dConf)}</div>
-     <div class="statcard sc-green"><div class="ico">✅</div><div class="num">${cur.deliv}</div><div class="cap">কনভার্ট (ডেলিভারড)</div>${dChip(dDeliv)}</div>
+     <div class="statcard sc-green"><div class="ico">✅</div><div class="num">${cur.deliv}</div><div class="cap">ডেলিভারড (কনভার্ট ${cur.conv})</div>${dChip(dDeliv)}</div>
      <div class="statcard sc-amber"><div class="ico">⏳</div><div class="num">${cur.pend}</div><div class="cap">পেন্ডিং</div>${dChip(dPend)}</div>
-     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(cur.comm)}</div><div class="cap">কমিশন (${commRate()}৳×${cur.pcs} পিস)</div>${dChip(dComm)}</div>
+     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(cur.comm)}</div><div class="cap">কমিশন (কনভার্ট ${cur.commPcs} পিস × ${commRate()}৳)</div>${dChip(dComm)}</div>
    </div>
    <div class="chartrow">
      <div class="panelbox"><h4>অর্ডার ওভারভিউ <span style="font-weight:500;color:var(--muted);font-size:12px">· ${niceMonth(ym)} দৈনিক কনফার্ম</span></h4>${lineChart(ser.vals,ser.labels)}</div>
@@ -1970,6 +1979,7 @@ if($('ag_save')) $('ag_save').onclick=async()=>{
   b.disabled=true;
   const rec={ order_no:'AP'+Date.now(), confirm_date:date, agent_id:agentId||null, agent_name: ag?(ag.name||ag.email):'',
     customer_number:cnum, customer_name:$('ag_cname').value.trim()||null, address:$('ag_addr').value.trim()||null,
+    order_type: $('ag_type')?$('ag_type').value:'regular',
     note:$('ag_note').value.trim()||null, status:'Pending', business:CURRENT_BIZ, created_by:CURRENT_USER?.id||null };
   const {data,error}=await db.from('cc_orders').insert(rec).select().single();
   if(error||!data){ b.disabled=false; toast('সেভ হয়নি: '+((error&&error.message)||''),true); return; }
@@ -1978,6 +1988,7 @@ if($('ag_save')) $('ag_save').onclick=async()=>{
   b.disabled=false;
   if(e2){ toast('প্রোডাক্ট সেভ হয়নি: '+(e2.message||''),true); return; }
   ['ag_cnum','ag_cname','ag_addr','ag_note'].forEach(id=>{const el=$(id);if(el)el.value='';});
+  if($('ag_type')) $('ag_type').value='regular';
   $('ag_items').innerHTML=''; agAddItem();
   toast('অর্ডার কনফার্ম হয়েছে ✓'); await loadAll();
 };
