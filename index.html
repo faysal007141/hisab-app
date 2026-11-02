@@ -933,6 +933,13 @@
       <div class="card">
         <h2>এজেন্ট পারফরম্যান্স <span class="sub">মাসভিত্তিক বিস্তারিত — এই মাস vs গত মাস, বেস্ট প্রোডাক্ট, কমিশন</span></h2>
         <div class="grid">
+          <div class="field"><label>পেজ / ব্যবসা</label>
+            <select id="ag_repBiz">
+              <option value="aqua">Aqua Purify BD</option>
+              <option value="redbox">Redbox</option>
+              <option value="yeaqqen">YAQQEN</option>
+            </select>
+          </div>
           <div class="field"><label>এজেন্ট</label><select id="ag_repAgent"></select></div>
           <div class="field"><label>মাস</label><input type="month" id="ag_repMonth"></div>
         </div>
@@ -1908,6 +1915,7 @@ function dailyOrderSeries(agentId, ym){
 }
 function renderAgReport(){
   const box=$('ag_reportBox'); if(!box) return;
+  if($('ag_repBiz')) $('ag_repBiz').value=CURRENT_BIZ;
   fillAgentSel('ag_repAgent', true);
   if($('ag_repMonth')&&!$('ag_repMonth').value) $('ag_repMonth').value=monthStr();
   const agentId=$('ag_repAgent')?$('ag_repAgent').value:'';
@@ -2037,7 +2045,10 @@ if($('ag_biz')) $('ag_biz').onchange=()=>{
 // রিপোর্ট/তারিখ লিসেনার
 { const e=$('ag_tdate'); if(e) e.addEventListener('change',renderAgToday);
   const e2=$('ag_repAgent'); if(e2) e2.addEventListener('change',renderAgReport);
-  const e3=$('ag_repMonth'); if(e3) e3.addEventListener('change',renderAgReport); }
+  const e3=$('ag_repMonth'); if(e3) e3.addEventListener('change',renderAgReport);
+  const e4=$('ag_repBiz'); if(e4) e4.addEventListener('change',()=>{ CURRENT_BIZ=e4.value; if(typeof setBizTheme==='function') setBizTheme();
+    if($('ag_biz')) $('ag_biz').value=CURRENT_BIZ; if($('ag_items')){ $('ag_items').innerHTML=''; agAddItem(); }
+    renderAgReport(); renderAgToday(); }); }
 
 // অর্ডার কনফার্ম সেভ
 if($('ag_save')) $('ag_save').onclick=async()=>{
