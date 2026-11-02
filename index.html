@@ -878,6 +878,13 @@
     <div class="subpanel" data-sub="entry">
       <div class="card">
         <h2>অর্ডার কনফার্ম <span class="sub">কাস্টমার নম্বর, প্রোডাক্ট, পিস ও দাম বসিয়ে কনফার্ম করুন</span></h2>
+        <div class="field" id="agBizField"><label>পেজ / ব্যবসা</label>
+          <select id="ag_biz">
+            <option value="aqua">Aqua Purify BD</option>
+            <option value="redbox">Redbox</option>
+            <option value="yeaqqen">YAQQEN</option>
+          </select>
+        </div>
         <div class="grid">
           <div class="field"><label>তারিখ</label><input type="date" id="ag_date"></div>
           <div class="field agadmin"><label>এজেন্ট</label><select id="ag_agent"></select></div>
@@ -1738,6 +1745,7 @@ function renderAgent(){
   document.querySelectorAll('#panel-agent .agadmin').forEach(el=>{ el.style.display = isAdmin ? '' : 'none'; });
   const setBtn=document.querySelector('#agSubnav .subbtn[data-sub="settings"]'); if(setBtn) setBtn.style.display=isAdmin?'':'none';
   fillAgentSel('ag_agent', false);
+  if($('ag_biz')) $('ag_biz').value=CURRENT_BIZ;
   if($('ag_date')&&!$('ag_date').value) $('ag_date').value=todayStr();
   if($('ag_items')&&!$('ag_items').children.length) agAddItem();
   renderAgToday();
@@ -1752,14 +1760,15 @@ function renderCommPanel(){
   const ym=($('comm_month')?$('comm_month').value:'')||monthStr();
   const ags=ccAgents();
   if(!ags.length){ box.innerHTML='<div class="empty">কোনো এজেন্ট নেই। সেটিংস → অ্যাক্সেসে role দিন।</div>'; return; }
-  box.innerHTML=`<div class="infobar" style="margin-bottom:10px">${niceMonth(ym)} — কনভার্ট অর্ডার কয়টা ডেলিভারি হয়েছে বসান (প্রতি পিস ${commRate()}৳)</div>`+
-   ags.map(p=>{ const st=agStats(monthOrders(p.id,ym)); const dc=monthlyDelivConvert(p.id,ym);
+  box.innerHTML=`<div class="infobar" style="margin-bottom:10px">${niceMonth(ym)} — কনভার্ট অর্ডার কয়টা ডেলিভারি হয়েছে বসান (প্রতি ডেলিভারি ${commRate()}৳) · 📥 দিয়ে নম্বর এক্সপোর্ট করে কুরিয়ার ডেটার সাথে মেলান</div>`+
+   ags.map(p=>{ const st=agStats(monthOrdersAll(p.id,ym)); const dc=monthlyDelivConvert(p.id,ym);
     return `<div class="item" style="align-items:center"><div>
         <div class="t">${p.name||p.email||'এজেন্ট'}</div>
         <div class="m">কনফার্ম ${st.conf} · কনভার্ট <b>${st.conv}</b></div>
-      </div><div style="display:flex;align-items:center;gap:10px">
-        <input type="number" class="comm-inp" data-agent="${p.id}" min="0" step="1" value="${dc}" style="width:90px" placeholder="ডেলিভারড">
-        <div class="amt" style="min-width:70px">${money(dc*commRate())}</div>
+      </div><div style="display:flex;align-items:center;gap:8px">
+        <button class="btn ghost comm-export" data-agent="${p.id}" title="কনভার্ট নম্বর এক্সপোর্ট" style="width:auto;padding:6px 10px;font-size:13px">📥</button>
+        <input type="number" class="comm-inp" data-agent="${p.id}" min="0" step="1" value="${dc}" style="width:84px" placeholder="ডেলিভারড">
+        <div class="amt" style="min-width:66px">${money(dc*commRate())}</div>
       </div></div>`;
    }).join('');
 }
@@ -1799,6 +1808,28 @@ function renderAgToday(){
 
 function monthOrders(agentId, ym){
   return CCORDERS.filter(o=> monthOf(o.confirm_date)===ym && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ);
+}
+// সব পেজ/ব্যবসা মিলিয়ে (মাস শেষ কমিশন ও এক্সপোর্টের জন্য)
+function monthOrdersAll(agentId, ym){
+  return CCORDERS.filter(o=> monthOf(o.confirm_date)===ym && (!agentId||o.agent_id===agentId));
+}
+const bizLabel = b => (BIZ[b]?BIZ[b].label:(b||''));
+// কনভার্ট অর্ডারের নম্বর CSV এক্সপোর্ট (কুরিয়ার ডেটার সাথে মেলানোর জন্য)
+function exportConvertCSV(agentId, ym){
+  const ag=PROFILES.find(p=>p.id===agentId), nm=ag?(ag.name||ag.email||'agent'):'agent';
+  const rows=monthOrdersAll(agentId,ym).filter(o=>(o.order_type||'regular')==='convert')
+    .sort((a,b)=>(a.confirm_date||'').localeCompare(b.confirm_date||''));
+  if(!rows.length){ toast('এই মাসে কনভার্ট অর্ডার নেই',true); return; }
+  const esc=s=>`"${String(s==null?'':s).replace(/"/g,'""')}"`;
+  const head=['ক্রম','কাস্টমার নম্বর','তারিখ','পেজ','প্রোডাক্ট','পিস','বর্তমান স্ট্যাটাস'];
+  const lines=rows.map((o,i)=>[ i+1, o.customer_number||'', o.confirm_date||'', bizLabel(o.business||'aqua'),
+    itemsOf(o.id).map(it=>it.product+'×'+n(it.qty)).join(' | '), orderQty(o), (o.status||'Pending') ].map(esc).join(','));
+  const csv='﻿'+[head.map(esc).join(','),...lines].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const url=URL.createObjectURL(blob); const a=document.createElement('a');
+  a.href=url; a.download=`convert-${nm}-${ym}.csv`; document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },500);
+  toast(`${rows.length} টি কনভার্ট অর্ডার এক্সপোর্ট হয়েছে ✓`);
 }
 function agStats(orders){
   let conf=orders.length, deliv=0, canc=0, pend=0, pcs=0, commPcs=0, conv=0, rev=0, comm=0; const prod={};
@@ -1998,6 +2029,12 @@ if($('ag_items')){
     const rows=document.querySelectorAll('#ag_items .ag-itemrow'); if(rows.length>1) b.closest('.ag-itemrow').remove(); agRecalc(); });
 }
 if($('ag_additem')) $('ag_additem').onclick=agAddItem;
+// এজেন্টের পেজ/ব্যবসা বদল → প্রোডাক্ট ও ড্যাশবোর্ড ঐ ব্যবসার
+if($('ag_biz')) $('ag_biz').onchange=()=>{
+  CURRENT_BIZ=$('ag_biz').value; if(typeof setBizTheme==='function') setBizTheme();
+  if($('ag_items')){ $('ag_items').innerHTML=''; agAddItem(); }  // নতুন ব্যবসার প্রোডাক্ট
+  renderAgToday(); renderAgReport();
+};
 // রিপোর্ট/তারিখ লিসেনার
 { const e=$('ag_tdate'); if(e) e.addEventListener('change',renderAgToday);
   const e2=$('ag_repAgent'); if(e2) e2.addEventListener('change',renderAgReport);
@@ -2044,8 +2081,10 @@ document.addEventListener('click',async(ev)=>{
 });
 // মাস শেষ কমিশন — লাইভ আপডেট ও সেভ
 { const cm=$('comm_month'); if(cm) cm.addEventListener('change',renderCommPanel);
-  const cl=$('commList'); if(cl) cl.addEventListener('input',e=>{ const inp=e.target.closest('.comm-inp'); if(!inp) return;
-    const amt=inp.closest('.item').querySelector('.amt'); if(amt) amt.textContent=money((n(inp.value))*commRate()); }); }
+  const cl=$('commList'); if(cl){ cl.addEventListener('input',e=>{ const inp=e.target.closest('.comm-inp'); if(!inp) return;
+    const amt=inp.closest('.item').querySelector('.amt'); if(amt) amt.textContent=money((n(inp.value))*commRate()); });
+    cl.addEventListener('click',e=>{ const b=e.target.closest('.comm-export'); if(!b) return;
+      const ym=($('comm_month')?$('comm_month').value:'')||monthStr(); exportConvertCSV(b.dataset.agent, ym); }); } }
 if($('comm_save')) $('comm_save').onclick=async()=>{
   if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
   const b=$('comm_save'); b.disabled=true;
