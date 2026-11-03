@@ -963,6 +963,12 @@
         <button class="btn" id="set_save">সেটিংস সেভ করুন</button>
       </div>
       <div class="card">
+        <h2>AI সহকারী — API কী <span class="sub">OpenRouter থেকে নেওয়া কী এখানে বসান (sk-or-… দিয়ে শুরু)। ডেটাবেসে সেভ হবে, কোডে নয়।</span></h2>
+        <div class="field"><label>OpenRouter API কী</label><input type="password" id="set_aikey" placeholder="sk-or-..." autocomplete="off"></div>
+        <div class="m" id="aikeyStatus" style="color:var(--muted);margin:2px 0 10px"></div>
+        <button class="btn" id="aikey_save">API কী সেভ করুন</button>
+      </div>
+      <div class="card">
         <h2>কল সেন্টার অ্যাক্সেস <span class="sub">কর্মচারীকে role দিন — agent শুধু কনফার্ম, leader স্ট্যাটাস মার্ক, admin সব</span></h2>
         <div class="list" id="agentAccess"><div class="empty">লোড হচ্ছে…</div></div>
       </div>
@@ -1046,8 +1052,10 @@ const db = supabase.createClient(SB_URL, SB_KEY);
 /* ---------- AI বিশ্লেষণ সেটিং ---------- */
 // ভবিষ্যতে সস্তা/নতুন মডেল এলে শুধু নিচের এই এক লাইন বদলান:
 const AI_MODEL = "openai/gpt-4o-mini";
-// নিচে আপনার OpenRouter key বসান (sk-or-... দিয়ে শুরু):
+// OpenRouter key এখন সেটিংস থেকে (ডেটাবেসে) বসে — কোডে রাখতে হয় না। এটা ফallback মাত্র।
 const OPENROUTER_KEY = "PASTE_YOUR_OPENROUTER_KEY_HERE";
+// কার্যকর কী: আগে সেটিংস (app_settings), না থাকলে উপরের কোডেরটা
+function aiKey(){ const k=(APP_SETTINGS&&APP_SETTINGS.openrouter_key||'').trim(); if(k) return k; return (OPENROUTER_KEY && !OPENROUTER_KEY.startsWith('PASTE_'))?OPENROUTER_KEY:''; }
 
 /* ---------- সহায়ক ---------- */
 const $ = id => document.getElementById(id);
@@ -1998,6 +2006,9 @@ function renderAgReport(){
 }
 
 function fillSettings(){
+  const st=$('aikeyStatus'); if(st){ const k=(APP_SETTINGS.openrouter_key||'').trim();
+    st.textContent = k ? ('✓ কী বসানো আছে ('+k.slice(0,7)+'…'+k.slice(-4)+')') : 'এখনো কোনো কী বসানো হয়নি।'; }
+  if($('set_aikey')) $('set_aikey').value='';
   if($('set_comm')) $('set_comm').value=commRate();
   if($('set_bonus')) $('set_bonus').value=bonusAmt();
   if($('set_in')) $('set_in').value=shiftIn();
@@ -2104,6 +2115,18 @@ if($('comm_save')) $('comm_save').onclick=async()=>{
   b.disabled=false;
   if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
   toast('কমিশন সেভ হয়েছে ✓'); await loadAll();
+};
+// AI API কী সেভ
+if($('aikey_save')) $('aikey_save').onclick=async()=>{
+  if(!(CURRENT_PROFILE&&CURRENT_PROFILE.role==='admin')) return;
+  const k=($('set_aikey')?$('set_aikey').value:'').trim();
+  if(!k){ toast('কী বসান',true); return; }
+  if(!k.startsWith('sk-or-')){ toast('OpenRouter কী সাধারণত sk-or- দিয়ে শুরু হয়',true); return; }
+  const b=$('aikey_save'); b.disabled=true;
+  const {error}=await db.from('app_settings').upsert([{skey:'openrouter_key', sval:k}],{onConflict:'skey'});
+  b.disabled=false;
+  if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
+  toast('API কী সেভ হয়েছে ✓ — AI সহকারী চালু'); await loadAll();
 };
 // সেটিংস সেভ
 if($('set_save')) $('set_save').onclick=async()=>{
@@ -2966,7 +2989,7 @@ function buildYearData(){
 }
 
 $('aiRun').onclick=async()=>{
-  if(!OPENROUTER_KEY || OPENROUTER_KEY.startsWith('PASTE_')){ $('aiOut').textContent='OpenRouter key বসানো হয়নি। কোডের উপরে OPENROUTER_KEY লাইনে আপনার key বসান।'; return; }
+  if(!aiKey()){ $('aiOut').textContent='OpenRouter key বসানো হয়নি। এজেন্ট → সেটিংসে API কী বসিয়ে সেভ করুন।'; return; }
   const {txt,months}=buildYearData();
   if(!months.length){ $('aiOut').textContent='এই ব্যবসায় এখনো যথেষ্ট ডেটা নেই।'; return; }
   $('aiRun').disabled=true; $('aiOut').textContent='বিশ্লেষণ হচ্ছে… একটু অপেক্ষা করুন।';
@@ -2974,7 +2997,7 @@ $('aiRun').onclick=async()=>{
   try{
     const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENROUTER_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+aiKey()},
       body:JSON.stringify({ model:AI_MODEL, messages:[{role:'system',content:sys},{role:'user',content:txt}] })
     });
     const j=await res.json();
@@ -2997,7 +3020,7 @@ function chatAdd(who,text){ const d=document.createElement('div'); d.className='
 
 async function chatSend(){
   const q=$('chatInput').value.trim(); if(!q) return;
-  if(!OPENROUTER_KEY || OPENROUTER_KEY.startsWith('PASTE_')){ chatAdd('a','OpenRouter key বসানো হয়নি। কোডের উপরে OPENROUTER_KEY লাইনে key বসান।'); return; }
+  if(!aiKey()){ chatAdd('a','OpenRouter key বসানো হয়নি। এজেন্ট → সেটিংসে API কী বসিয়ে সেভ করুন।'); return; }
   $('chatInput').value=''; chatAdd('u',q);
   const typing=chatAdd('a','লিখছে…');
   const {txt}=buildYearData();
@@ -3018,7 +3041,7 @@ ${txt}`;
   try{
     const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENROUTER_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+aiKey()},
       body:JSON.stringify({ model:AI_MODEL, messages:[{role:'system',content:sys},...CHAT] })
     });
     const j=await res.json();
