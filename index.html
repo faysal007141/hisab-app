@@ -2316,7 +2316,7 @@ function applyTopBars(){
   const active=document.querySelector('.tab.active'); const tab=active?active.dataset.tab:'';
   const hideTop = (tab==='salary'||tab==='attend'||tab==='agent');
   const isAdmin = CURRENT_PROFILE && CURRENT_PROFILE.role==='admin';
-  const sb=$('summaryBox'); if(sb) sb.style.display=(isAdmin&&!hideTop)?'':'none';
+  const sb=$('summaryBox'); if(sb) sb.style.display=(isAdmin&&tab==='dash')?'':'none';
   const bz=$('bizSwitch'); if(bz){ const multi=(typeof allowedBusinesses==='function'?allowedBusinesses().length>1:true); bz.style.display=(!hideTop&&multi)?'flex':'none'; }
 }
 // বেতন সেকশনের সাব-ট্যাব
