@@ -209,6 +209,44 @@
   .toast.err{background:var(--loss)}
   .note-inline{font-size:12.5px;color:var(--muted);margin-top:6px}
   @media(max-width:560px){.grid-3{grid-template-columns:1fr 1fr}.chip .val{font-size:19px}}
+
+  /* ===== নতুন ড্যাশবোর্ড লুক ===== */
+  body{background:#eef3f3}
+  /* ডার্ক সাইডবার */
+  .sidebar{background:linear-gradient(185deg,#0e6266,#0a4d50 55%,#08403f);border-right:none;color:#dff3f2}
+  .side-brand{flex-direction:column;align-items:flex-start;gap:3px;color:#fff;border-bottom:1px solid rgba(255,255,255,.12);padding:20px 18px 16px}
+  .side-brand .brow{display:flex;align-items:center;gap:10px}
+  .side-brand .dot{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.16);box-shadow:none;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .side-brand .tagline{font-size:10.5px;font-weight:500;color:#a7d6d3;letter-spacing:.2px;margin-left:40px;margin-top:-2px}
+  .side-nav .tab{color:#c6e4e2}
+  .side-nav .tab:hover{background:rgba(255,255,255,.09)}
+  .side-nav .tab.active{background:#fff;color:#0a5c5f;font-weight:700;box-shadow:0 8px 18px rgba(0,0,0,.18)}
+  .side-foot{border-top:1px solid rgba(255,255,255,.12);position:relative;z-index:1}
+  .side-foot .btn.ghost{color:#fff;border-color:rgba(255,255,255,.45);background:rgba(255,255,255,.06)}
+  .side-foot .btn.ghost:hover{background:rgba(255,255,255,.12)}
+  .sidewave{position:absolute;left:0;right:0;bottom:56px;z-index:0;line-height:0;opacity:.5;pointer-events:none}
+  .sidewave svg{width:100%;height:auto;display:block}
+  /* টপবার */
+  .topbar{background:var(--surface);border-bottom:1px solid var(--line)}
+  .topbar .tb-title{display:flex;align-items:center;gap:9px}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--primary-d));color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+  /* কার্ড নরম */
+  .card{border-radius:18px;box-shadow:0 2px 12px rgba(12,43,47,.05)}
+  /* উপরের সামারি — আইকন কার্ড */
+  .summary .chip{display:flex;align-items:center;gap:12px;border-radius:16px;padding:14px 15px;box-shadow:0 2px 10px rgba(12,43,47,.05)}
+  .summary .chip .cico{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+  /* ড্যাশবোর্ড টাইল */
+  .dtl{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:15px 16px;box-shadow:0 2px 10px rgba(12,43,47,.05)}
+  .dtl .dico{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;margin-bottom:9px}
+  .dtl .dl{font-size:12.5px;color:var(--muted);font-weight:500}
+  .dtl .dv{font-size:21px;font-weight:800;margin-top:3px}
+  .dtl .ds{font-size:11px;color:var(--muted);margin-top:2px}
+  .ic1{background:#e3f0ff;color:#2f6fed}.ic2{background:#e7f8ee;color:#18a558}.ic3{background:#fdeaea;color:#d6447a}
+  .ic4{background:#fff2dd;color:#c88a00}.ic5{background:#eceaff;color:#6a43c8}.ic6{background:#e0f5f4;color:#0a7d80}.ic0{background:#eef1f3;color:#5b7075}
+  /* হিরো ব্যানার */
+  .dhero{background:linear-gradient(120deg,#e9f6f5,#f5fbfa);border:1px solid var(--line);border-radius:18px;padding:18px 20px;margin-bottom:16px;position:relative;overflow:hidden}
+  .dhero .hico{width:46px;height:46px;border-radius:13px;background:#fff;box-shadow:0 2px 10px rgba(12,43,47,.08);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:10px}
+  .dhero .art{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:58px;opacity:.35;pointer-events:none}
 </style>
 </head>
 <body>
@@ -232,7 +270,8 @@
 
 <div class="shell">
   <aside class="sidebar" id="sidebar">
-    <div class="side-brand"><span class="dot"></span> AP Group হিসাব</div>
+    <div class="side-brand"><div class="brow"><span class="dot">💧</span> AP Group হিসাব</div><div class="tagline">হিসাব · বিক্রি · স্টক · ব্যবসা ব্যবস্থাপনা</div></div>
+    <div class="sidewave"><svg viewBox="0 0 232 70" preserveAspectRatio="none"><path d="M0 40 Q58 10 116 36 T232 30 V70 H0 Z" fill="rgba(255,255,255,.10)"/><path d="M0 52 Q58 26 116 48 T232 44 V70 H0 Z" fill="rgba(255,255,255,.08)"/></svg></div>
     <nav class="side-nav">
       <div class="tab" data-tab="dash">🏠 ড্যাশবোর্ড</div>
       <div class="tab active" data-tab="sales">🛒 বিক্রি</div>
@@ -256,6 +295,7 @@
       <button class="hamb" id="hamb">☰</button>
       <div class="tb-title" id="tbTitle">ড্যাশবোর্ড</div>
       <div class="tb-actions">
+        <span class="avatar" id="avatar" style="display:none">●</span>
         <span id="whoami"></span>
         <button id="openGuide" class="ic-btn" title="হিসাব কীভাবে হয়">📘</button>
         <button id="openInvoice" class="ic-btn" title="Invoice বানান">🧾</button>
@@ -270,12 +310,12 @@
       <button class="bizbtn" data-biz="yeaqqen">YAQQEN</button>
     </div>
     <div class="summary" id="summaryBox">
-      <div class="chip"><div class="lbl">আজকের বিক্রি</div><div class="val num" id="sumSale">—</div></div>
-      <div class="chip"><div class="lbl">আজকের খরচ</div><div class="val num" id="sumCost">—</div></div>
-      <div class="chip"><div class="lbl">আজকের নিট লাভ</div><div class="val num" id="sumToday">—</div></div>
-      <div class="chip"><div class="lbl" id="monthLbl">এই মাসের নিট লাভ</div><div class="val num" id="sumMonth">—</div></div>
-      <div class="chip"><div class="lbl">আজকের অর্ডার</div><div class="val num" id="sumOrdToday">—</div></div>
-      <div class="chip"><div class="lbl" id="monthOrdLbl">এই মাসের অর্ডার</div><div class="val num" id="sumOrdMonth">—</div></div>
+      <div class="chip"><div class="cico ic1">🛒</div><div><div class="lbl">আজকের বিক্রি</div><div class="val num" id="sumSale">—</div></div></div>
+      <div class="chip"><div class="cico ic4">💸</div><div><div class="lbl">আজকের খরচ</div><div class="val num" id="sumCost">—</div></div></div>
+      <div class="chip"><div class="cico ic2">📈</div><div><div class="lbl">আজকের নিট লাভ</div><div class="val num" id="sumToday">—</div></div></div>
+      <div class="chip"><div class="cico ic6">📊</div><div><div class="lbl" id="monthLbl">এই মাসের নিট লাভ</div><div class="val num" id="sumMonth">—</div></div></div>
+      <div class="chip"><div class="cico ic1">📦</div><div><div class="lbl">আজকের অর্ডার</div><div class="val num" id="sumOrdToday">—</div></div></div>
+      <div class="chip"><div class="cico ic5">🗂️</div><div><div class="lbl" id="monthOrdLbl">এই মাসের অর্ডার</div><div class="val num" id="sumOrdMonth">—</div></div></div>
     </div>
       <main>
 
@@ -343,9 +383,11 @@
   <!-- ============ SALES ============ -->
   <!-- ============ DASHBOARD ============ -->
   <section class="panel" id="panel-dash">
-    <div class="card">
-      <h2>ড্যাশবোর্ড <span class="sub">সব হিসাব একনজরে</span></h2>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:4px">
+    <div class="dhero">
+      <div class="art">📈</div>
+      <div class="hico">📊</div>
+      <h2 style="margin:0;font-size:19px">ড্যাশবোর্ড <span class="sub" style="display:block;font-weight:500;font-size:13px;color:var(--muted);margin-top:2px">সব মিলিয়ে ব্যবসার সার্বিক এনালাইসিস</span></h2>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px">
         <button class="rbtn active" data-r="today">আজ</button>
         <button class="rbtn" data-r="month">এই মাস</button>
         <button class="rbtn" data-r="custom">কাস্টম</button>
@@ -1613,10 +1655,11 @@ function dashSum(from,to){
   days.forEach(d=>{ const r=calcDay(d); for(const k in a) a[k]+=(r[k]||0); });
   return a;
 }
-function dashTile(label,val,color,sub){ return `<div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:var(--shadow)">
-  <div style="font-size:12.5px;color:var(--muted);font-weight:500">${label}</div>
-  <div class="num" style="font-size:21px;font-weight:700;margin-top:3px;color:${color||'var(--ink)'}">${val}</div>
-  ${sub?`<div style="font-size:11px;color:var(--muted);margin-top:2px">${sub}</div>`:''}</div>`; }
+function dashTile(label,val,color,sub,icon,ic){ return `<div class="dtl">
+  ${icon?`<div class="dico ${ic||'ic0'}">${icon}</div>`:''}
+  <div class="dl">${label}</div>
+  <div class="dv num" style="color:${color||'var(--ink)'}">${val}</div>
+  ${sub?`<div class="ds">${sub}</div>`:''}</div>`; }
 function dashGrid(inner){ return `<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px">${inner}</div>`; }
 function dashBars(obj){
   const keys=Object.keys(obj).filter(k=>obj[k]>0).sort((x,y)=>obj[y]-obj[x]).slice(0,8);
@@ -1656,14 +1699,14 @@ function renderDash(){
   $('dashRangeLbl').textContent = (from===to?niceDate(from):niceDate(from)+' — '+niceDate(to)) + ' · ' + BIZ[CURRENT_BIZ].label;
   const totalCost=a.directCost+a.opCost+a.adCost+a.oneTime;
   $('dashCards').innerHTML=dashGrid(
-    dashTile('মোট বিক্রি',money(a.revenue))+
-    dashTile('নিট লাভ',money(a.net), a.net>=0?'var(--profit)':'var(--loss)')+
-    dashTile('মোট খরচ',money(totalCost),'var(--loss)','পণ্য+প্যাক+ডেলি+অপা+Ad+এককালীন')+
-    dashTile('রিটার্ন লস',money(a.returnLoss),'var(--loss)')+
-    dashTile('অর্ডার',a.orders+' টি')+
-    dashTile('পার্সেল',a.parcels+' পিস')+
-    dashTile('জোন চেঞ্জ', ZONE.filter(z=>z.status==='done' && (z.change_date||'')>=from && (z.change_date||'')<=to).length+' টি','var(--ink)','ঐ সময়ে সম্পন্ন')+
-    dashTile('ওয়েটিং-এ', ZONE.filter(z=>z.status!=='done').length+' টি','var(--loss)','বর্তমান ব্যাকলগ')
+    dashTile('মোট বিক্রি',money(a.revenue),null,null,'🛒','ic1')+
+    dashTile('নিট লাভ',money(a.net), a.net>=0?'var(--profit)':'var(--loss)',null,'📈','ic2')+
+    dashTile('মোট খরচ',money(totalCost),'var(--loss)','পণ্য+প্যাক+ডেলি+অপা+Ad+এককালীন','💸','ic3')+
+    dashTile('রিটার্ন লস',money(a.returnLoss),'var(--loss)',null,'↩️','ic3')+
+    dashTile('অর্ডার',a.orders+' টি',null,null,'📦','ic1')+
+    dashTile('পার্সেল',a.parcels+' পিস',null,null,'🚚','ic6')+
+    dashTile('জোন চেঞ্জ', ZONE.filter(z=>z.status==='done' && (z.change_date||'')>=from && (z.change_date||'')<=to).length+' টি','var(--ink)','ঐ সময়ে সম্পন্ন','🔄','ic5')+
+    dashTile('ওয়েটিং-এ', ZONE.filter(z=>z.status!=='done').length+' টি','var(--loss)','বর্তমান ব্যাকলগ','⏳','ic4')
   );
   const accs=['Bank','bKash','Cash'], inSum={}, outSum={};
   accs.forEach(x=>{inSum[x]=0;outSum[x]=0;});
@@ -1672,11 +1715,11 @@ function renderDash(){
   const bal=x=>(inSum[x]||0)-(outSum[x]||0);
   const stk=stockByProduct();
   $('dashBalance').innerHTML=dashGrid(
-    dashTile('ব্যাংক',money(bal('Bank')),'var(--primary)')+
-    dashTile('bKash',money(bal('bKash')),'var(--primary)')+
-    dashTile('Cash',money(bal('Cash')),'var(--primary)')+
-    dashTile('মোট ব্যালেন্স',money(bal('Bank')+bal('bKash')+bal('Cash')),'var(--primary)')+
-    dashTile('স্টকে মাল',money(stk.totalVal),'var(--ink)','বর্তমান মূল্য')
+    dashTile('ব্যাংক',money(bal('Bank')),'var(--primary)',null,'🏦','ic6')+
+    dashTile('bKash',money(bal('bKash')),'var(--primary)',null,'📲','ic3')+
+    dashTile('Cash',money(bal('Cash')),'var(--primary)',null,'💵','ic2')+
+    dashTile('মোট ব্যালেন্স',money(bal('Bank')+bal('bKash')+bal('Cash')),'var(--primary)',null,'💰','ic5')+
+    dashTile('স্টকে মাল',money(stk.totalVal),'var(--ink)','বর্তমান মূল্য','📦','ic1')
   );
   let cfrom=from, cto=to;
   if(DASH_RANGE==='today'){ const d=new Date(to+'T00:00:00'); d.setDate(d.getDate()-13); cfrom=d.toLocaleDateString('en-CA'); }
@@ -3191,6 +3234,7 @@ function applyPermissions(){
   document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
   if(first){ const ft=document.querySelector(`.tab[data-tab="${first}"]`); ft.classList.add('active'); $('panel-'+first).classList.add('active'); const tt=$('tbTitle'); if(tt) tt.textContent=(ft.textContent||'').trim(); }
   $('whoami').textContent = (p.name||p.email||'') + (isAdmin?' (admin)':'');
+  { const av=$('avatar'); if(av){ const nm=(p.name||p.email||'?').trim(); av.textContent=(nm[0]||'?').toUpperCase(); av.style.display='inline-flex'; } }
   if(typeof applyTopBars==='function') applyTopBars();
 }
 
