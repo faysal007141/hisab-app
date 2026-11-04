@@ -987,7 +987,17 @@
             </select>
           </div>
           <div class="field"><label>এজেন্ট</label><select id="ag_repAgent"></select></div>
-          <div class="field"><label>মাস</label><input type="month" id="ag_repMonth"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:2px 0 14px">
+          <button class="rbtn" data-rr="day" type="button">দিন</button>
+          <button class="rbtn active" data-rr="month" type="button">মাস</button>
+          <button class="rbtn" data-rr="custom" type="button">কাস্টম</button>
+          <input type="date" id="ag_repDay" style="max-width:170px;display:none">
+          <input type="month" id="ag_repMonth" style="max-width:170px">
+          <span id="ag_repCustom" style="display:none;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="date" id="ag_repFrom" style="max-width:150px"> <span style="color:var(--muted)">থেকে</span>
+            <input type="date" id="ag_repTo" style="max-width:150px">
+          </span>
         </div>
         <div id="ag_reportBox"><div class="empty">এজেন্ট বাছুন।</div></div>
       </div>
@@ -1960,60 +1970,76 @@ function lineChart(vals, labels){
     ${dots}${xlab}</svg>`;
 }
 function daysInMonth(ym){ const [y,m]=ym.split('-').map(Number); return new Date(y,m,0).getDate(); }
-function dailyOrderSeries(agentId, ym){
-  const dim=daysInMonth(ym), vals=[], labels=[];
-  for(let d=1; d<=dim; d++){ const ds=ym+'-'+String(d).padStart(2,'0');
-    vals.push(CCORDERS.filter(o=>o.confirm_date===ds && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ).length);
-    labels.push(String(d));
-  }
+// রেঞ্জ ভিত্তিক অর্ডার ও সিরিজ (দিন/মাস/কাস্টম)
+let AG_REP_RANGE='month';
+function rangeOrders(agentId, from, to){
+  return CCORDERS.filter(o=> (o.confirm_date||'')>=from && (o.confirm_date||'')<=to && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ);
+}
+function daySeriesRange(agentId, from, to){
+  const days=dayRange(from,to), vals=[], labels=[];
+  days.forEach(ds=>{ vals.push(CCORDERS.filter(o=>o.confirm_date===ds && (!agentId||o.agent_id===agentId) && (o.business||'aqua')===CURRENT_BIZ).length); labels.push(ds.slice(8)); });
   return {vals,labels};
+}
+function agRepDates(){
+  if(AG_REP_RANGE==='day'){ const d=($('ag_repDay')&&$('ag_repDay').value)||todayStr(); return {from:d,to:d,ym:monthOf(d)}; }
+  if(AG_REP_RANGE==='custom'){ let f=($('ag_repFrom')&&$('ag_repFrom').value)||todayStr(), t=($('ag_repTo')&&$('ag_repTo').value)||f; if(f>t){const x=f;f=t;t=x;} return {from:f,to:t,ym:monthOf(t)}; }
+  const ym=($('ag_repMonth')&&$('ag_repMonth').value)||monthStr(); return {from:ym+'-01', to:ym+'-'+String(daysInMonth(ym)).padStart(2,'0'), ym};
 }
 function renderAgReport(){
   const box=$('ag_reportBox'); if(!box) return;
   if($('ag_repBiz')) $('ag_repBiz').value=CURRENT_BIZ;
   fillAgentSel('ag_repAgent', true);
   if($('ag_repMonth')&&!$('ag_repMonth').value) $('ag_repMonth').value=monthStr();
+  if($('ag_repDay')&&!$('ag_repDay').value) $('ag_repDay').value=todayStr();
+  if($('ag_repFrom')&&!$('ag_repFrom').value) $('ag_repFrom').value=monthStr()+'-01';
+  if($('ag_repTo')&&!$('ag_repTo').value) $('ag_repTo').value=todayStr();
   const agentId=$('ag_repAgent')?$('ag_repAgent').value:'';
-  const ym=($('ag_repMonth')?$('ag_repMonth').value:'')||monthStr();
+  const {from,to,ym}=agRepDates();
+  const isMonth=(AG_REP_RANGE==='month');
+  const rangeLabel = isMonth ? niceMonth(ym) : (from===to ? niceDate(from) : niceDate(from)+' – '+niceDate(to));
   if(!agentId){
-    const rows=ccAgents().map(p=>({id:p.id,name:p.name||p.email,st:agStats(monthOrders(p.id,ym)),comm:monthlyCommission(p.id,ym),dc:monthlyDelivConvert(p.id,ym)}))
-      .filter(r=>r.st.conf>0).sort((a,b)=>b.comm-a.comm||b.st.conv-a.st.conv);
-    if(!rows.length){ box.innerHTML=`<div class="empty">${niceMonth(ym)} — কোনো অর্ডার নেই।</div>`; return; }
-    box.innerHTML=`<div class="infobar" style="margin:12px 0">${niceMonth(ym)} — এজেন্ট লিডারবোর্ড (কমিশন অনুযায়ী)</div>`+rows.map((r,i)=>`<div class="item"><div>
+    const rows=ccAgents().map(p=>({id:p.id,name:p.name||p.email,st:agStats(rangeOrders(p.id,from,to)),comm:monthlyCommission(p.id,ym),dc:monthlyDelivConvert(p.id,ym)}))
+      .filter(r=>r.st.conf>0).sort((a,b)=>b.st.conv-a.st.conv||b.comm-a.comm);
+    if(!rows.length){ box.innerHTML=`<div class="empty">${rangeLabel} — কোনো অর্ডার নেই।</div>`; return; }
+    box.innerHTML=`<div class="infobar" style="margin:12px 0">${rangeLabel} — এজেন্ট লিডারবোর্ড (কনভার্ট অনুযায়ী)${isMonth?' · কমিশন মাসিক':''}</div>`+rows.map((r,i)=>`<div class="item"><div>
         <div class="t">${i+1}. ${r.name}</div>
-        <div class="m">কনফার্ম ${r.st.conf} · কনভার্ট ${r.st.conv} · ডেলিভারড-কনভার্ট ${r.dc} · কনভার্সন ${r.st.convRate}%</div>
-      </div><div style="text-align:right"><div class="amt">${money(r.comm)}</div><div class="m">কমিশন</div></div></div>`).join('');
+        <div class="m">কনফার্ম ${r.st.conf} · কনভার্ট ${r.st.conv} · ডেলিভারড ${r.st.deliv} · কনভার্সন ${r.st.convRate}%</div>
+      </div><div style="text-align:right">${isMonth?`<div class="amt">${money(r.comm)}</div><div class="m">মাসিক কমিশন</div>`:`<div class="amt">${r.st.conv}</div><div class="m">কনভার্ট</div>`}</div></div>`).join('');
     return;
   }
   const ag=PROFILES.find(p=>p.id===agentId), agName=ag?(ag.name||ag.email):'';
-  const prevYm=prevMonth(ym);
-  const cur=agStats(monthOrders(agentId,ym)), prev=agStats(monthOrders(agentId,prevYm));
+  // তুলনার আগের সমান সময়
+  let prevFrom,prevTo,prevLabel,cmpWord;
+  if(isMonth){ const pm=prevMonth(ym); prevFrom=pm+'-01'; prevTo=pm+'-'+String(daysInMonth(pm)).padStart(2,'0'); prevLabel=niceMonth(pm)+' (গত মাস)'; cmpWord='গত মাসের চেয়ে'; }
+  else { const len=dayRange(from,to).length||1; const pe=new Date(from+'T00:00:00'); pe.setDate(pe.getDate()-1); prevTo=pe.toLocaleDateString('en-CA'); const ps=new Date(prevTo+'T00:00:00'); ps.setDate(ps.getDate()-(len-1)); prevFrom=ps.toLocaleDateString('en-CA'); prevLabel='আগের সমান সময়'; cmpWord='আগের চেয়ে'; }
+  const cur=agStats(rangeOrders(agentId,from,to)), prev=agStats(rangeOrders(agentId,prevFrom,prevTo));
   const bonus=agAttBonus(agName, ym);
   const today=agDayStats(agentId, todayStr());
-  // কমিশন = অ্যাডমিনের বসানো মাসিক ডেলিভারড-কনভার্ট × রেট (টাকা নয়, সংখ্যা ভিত্তিক)
-  const dcCur=monthlyDelivConvert(agentId,ym), dcPrev=monthlyDelivConvert(agentId,prevYm);
-  const commCur=dcCur*commRate(), commPrev=dcPrev*commRate();
-  // এই মাস vs গত মাস — কনভার্ট অর্ডার (সংখ্যা)
+  const dcCur=monthlyDelivConvert(agentId,ym), commCur=dcCur*commRate();
   const diff=cur.conv-prev.conv, pct=prev.conv>0?Math.round(diff/prev.conv*100):(cur.conv>0?100:0), up=diff>=0;
   const arrow=up?'▲':'▼', col=up?'var(--profit)':'var(--loss)';
   const cmx=Math.max(1,cur.conv,prev.conv);
   const cmpBars=`<div style="margin:6px 0 2px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(ym)} (এই মাস)</span><span style="font-weight:700">${cur.conv} টি</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${rangeLabel}</span><span style="font-weight:700">${cur.conv} টি</span></div>
       <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(cur.conv/cmx*100))}%"></div></div></div>
     <div style="margin:10px 0 2px">
-      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${niceMonth(prevYm)} (গত মাস)</span><span style="font-weight:700;color:var(--muted)">${prev.conv} টি</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${prevLabel}</span><span style="font-weight:700;color:var(--muted)">${prev.conv} টি</span></div>
       <div class="dbar-track"><div class="dbar" style="width:${Math.max(4,Math.round(prev.conv/cmx*100))}%;background:var(--muted);opacity:.55"></div></div></div>`;
   const prodMap={};
-  monthOrders(agentId,ym).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
+  rangeOrders(agentId,from,to).forEach(o=>itemsOf(o.id).forEach(it=>{ prodMap[it.product]=(prodMap[it.product]||0)+n(it.qty); }));
   const prodPairs=Object.keys(prodMap).map(k=>({label:k,val:prodMap[k],sub:prodMap[k]+' পিস'})).sort((a,b)=>b.val-a.val).slice(0,6);
-  const ser=dailyOrderSeries(agentId,ym);
-  const dChip=(v,suffix)=>`<div class="delta" style="color:${v>=0?'var(--profit)':'var(--loss)'}">${v>=0?'▲':'▼'} গত মাসের চেয়ে ${Math.abs(v)}${suffix||''}</div>`;
-  const dConf=cur.conf-prev.conf, dConv=cur.conv-prev.conv, dPend=cur.pend-prev.pend, dComm=commCur-commPrev;
-  const recent=monthOrders(agentId,ym).slice(0,5);
+  const ser=daySeriesRange(agentId,from,to);
+  const dChip=(v,suffix)=>`<div class="delta" style="color:${v>=0?'var(--profit)':'var(--loss)'}">${v>=0?'▲':'▼'} ${cmpWord} ${Math.abs(v)}${suffix||''}</div>`;
+  const dConf=cur.conf-prev.conf, dConv=cur.conv-prev.conv, dDeliv=cur.deliv-prev.deliv;
+  // ৪র্থ কার্ড: মাস মোডে কমিশন, নাহলে ডেলিভারড
+  const card4 = isMonth
+    ? `<div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(commCur)}</div><div class="cap">মাসিক কমিশন (${dcCur} × ${commRate()}৳)</div></div>`
+    : `<div class="statcard sc-rose"><div class="ico">⏳</div><div class="num">${cur.pend}</div><div class="cap">পেন্ডিং</div></div>`;
+  const recent=rangeOrders(agentId,from,to).slice(0,6);
   const tBadge=o=>(o.order_type||'regular')==='convert'?'<span class="badge" style="background:#e8e2ff;color:#6a43c8">কনভার্ট</span>':'<span class="badge" style="background:#eef1f3;color:#5b7075">রেগুলার</span>';
   box.innerHTML=`
    <div class="dashhead">
-     <div><h3>${bizLabel(CURRENT_BIZ)} 👋</h3><div class="sub">${agName} · ${niceMonth(ym)}-এর পারফরম্যান্স এক নজরে</div></div>
+     <div><h3>${bizLabel(CURRENT_BIZ)} 👋</h3><div class="sub">${agName} · ${rangeLabel} — পারফরম্যান্স এক নজরে</div></div>
      <div class="infobar" style="margin:0;display:flex;gap:14px;flex-wrap:wrap;align-items:center">
        📅 আজ — কনফার্ম <b>${today.conf}</b> · কনভার্ট <b style="color:var(--profit)">${today.conv}</b>
      </div>
@@ -2021,11 +2047,11 @@ function renderAgReport(){
    <div class="statgrid">
      <div class="statcard sc-blue"><div class="ico">🧾</div><div class="num">${cur.conf}</div><div class="cap">কনফার্ম অর্ডার</div>${dChip(dConf)}</div>
      <div class="statcard sc-green"><div class="ico">⭐</div><div class="num">${cur.conv}</div><div class="cap">কনভার্ট অর্ডার</div>${dChip(dConv)}</div>
-     <div class="statcard sc-amber"><div class="ico">📦</div><div class="num">${dcCur}</div><div class="cap">ডেলিভারড কনভার্ট (অ্যাডমিন যাচাই)</div></div>
-     <div class="statcard sc-rose"><div class="ico">💰</div><div class="num">${money(commCur)}</div><div class="cap">কমিশন (${dcCur} × ${commRate()}৳)</div>${dChip(dComm,'৳')}</div>
+     <div class="statcard sc-amber"><div class="ico">📦</div><div class="num">${cur.deliv}</div><div class="cap">ডেলিভারড</div>${dChip(dDeliv)}</div>
+     ${card4}
    </div>
    <div class="chartrow">
-     <div class="panelbox"><h4>অর্ডার ওভারভিউ <span style="font-weight:500;color:var(--muted);font-size:12px">· ${niceMonth(ym)} দৈনিক কনফার্ম</span></h4>${lineChart(ser.vals,ser.labels)}</div>
+     <div class="panelbox"><h4>অর্ডার ওভারভিউ <span style="font-weight:500;color:var(--muted);font-size:12px">· ${rangeLabel} দৈনিক কনফার্ম</span></h4>${lineChart(ser.vals,ser.labels)}</div>
      <div class="panelbox"><h4>অর্ডার টাইপ</h4>${donutChart([
         {label:'কনভার্ট',val:cur.conv,color:'#6a43c8'},
         {label:'রেগুলার',val:cur.conf-cur.conv,color:'#8aa0a6'}
@@ -2036,11 +2062,11 @@ function renderAgReport(){
        <h4>🏆 সবচেয়ে বেশি অর্ডার হওয়া প্রোডাক্ট</h4>${barList(prodPairs)}
      </div>
      <div class="panelbox">
-       <h4>এই মাস vs গত মাস — কনভার্ট অর্ডার <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></h4>
+       <h4>${rangeLabel} vs ${prevLabel} — কনভার্ট <span style="color:${col};font-weight:700">${arrow} ${Math.abs(pct)}%</span></h4>
        ${cmpBars}
-       <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px">
+       ${isMonth?`<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px">
          <span>হাজিরা বোনাস <b>${bonus.has?(bonus.eligible?money(bonus.amt)+' ✓':'অযোগ্য'):'—'}</b></span>
-       </div>
+       </div>`:''}
      </div>
    </div>
    <div class="panelbox">
@@ -2048,7 +2074,7 @@ function renderAgReport(){
      ${recent.length?recent.map(o=>`<div class="item"><div>
          <div class="t">${o.customer_number||''} ${tBadge(o)}</div>
          <div class="m">${niceDate(o.confirm_date)} · ${itemsOf(o.id).map(it=>it.product+' ('+it.qty+')').join(', ')||'—'}</div>
-       </div><div style="text-align:right"><div class="m">${orderQty(o)} পিস</div></div></div>`).join(''):'<div class="empty">এই মাসে কোনো অর্ডার নেই।</div>'}
+       </div><div style="text-align:right"><div class="m">${orderQty(o)} পিস</div></div></div>`).join(''):'<div class="empty">এই সময়ে কোনো অর্ডার নেই।</div>'}
    </div>`;
 }
 
@@ -2103,10 +2129,19 @@ if($('ag_biz')) $('ag_biz').onchange=()=>{
 // রিপোর্ট/তারিখ লিসেনার
 { const e=$('ag_tdate'); if(e) e.addEventListener('change',renderAgToday);
   const e2=$('ag_repAgent'); if(e2) e2.addEventListener('change',renderAgReport);
-  const e3=$('ag_repMonth'); if(e3) e3.addEventListener('change',renderAgReport);
+  ['ag_repMonth','ag_repDay','ag_repFrom','ag_repTo'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('change',renderAgReport); });
   const e4=$('ag_repBiz'); if(e4) e4.addEventListener('change',()=>{ CURRENT_BIZ=e4.value; if(typeof setBizTheme==='function') setBizTheme();
     if($('ag_biz')) $('ag_biz').value=CURRENT_BIZ; if($('ag_items')){ $('ag_items').innerHTML=''; agAddItem(); }
     renderAgReport(); renderAgToday(); }); }
+// রিপোর্ট রেঞ্জ: দিন / মাস / কাস্টম
+document.querySelectorAll('[data-rr]').forEach(b=>{ b.onclick=()=>{
+  AG_REP_RANGE=b.dataset.rr;
+  document.querySelectorAll('[data-rr]').forEach(x=>x.classList.toggle('active',x===b));
+  if($('ag_repDay')) $('ag_repDay').style.display = AG_REP_RANGE==='day' ? '' : 'none';
+  if($('ag_repMonth')) $('ag_repMonth').style.display = AG_REP_RANGE==='month' ? '' : 'none';
+  if($('ag_repCustom')) $('ag_repCustom').style.display = AG_REP_RANGE==='custom' ? 'inline-flex' : 'none';
+  renderAgReport();
+}; });
 
 // অর্ডার কনফার্ম সেভ
 if($('ag_save')) $('ag_save').onclick=async()=>{
