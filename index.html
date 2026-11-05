@@ -159,6 +159,7 @@
   .badge.oh{background:#e7f4f3;color:#0a5c5f}
   .badge.ot{background:#fdecec;color:var(--loss)}
   .del{background:none;border:none;color:var(--loss);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px}
+  .edb{background:none;border:none;color:var(--primary);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px;margin-right:2px}
   .edt{background:none;border:none;color:var(--primary);cursor:pointer;font-size:12.5px;font-weight:600;padding:4px 6px;border-radius:6px;margin-right:2px}
   .edt:hover{background:#e7f4f3}
   .del:hover{background:#fde8e8}
@@ -1563,7 +1564,10 @@ function renderSalary(){
   if(empBox){ empBox.innerHTML = EMPLOYEES.length ? EMPLOYEES.map(e=>`<div class="item"><div>
       <div class="t">${e.name}${e.mobile?' · 📱 '+e.mobile:''}</div>
       <div class="m">${e.join_date?'জয়েন '+niceDate(e.join_date)+' · ':''}বেতন ${money(n(e.monthly_salary))}${e.note?' · '+e.note:''}</div>
-    </div><div style="text-align:right"><button class="del" data-t="hisab_employees" data-id="${e.id}">মুছুন</button></div></div>`).join('') : '<div class="empty">এখনো কোনো কর্মচারী নেই।</div>'; }
+    </div><div style="text-align:right;white-space:nowrap">
+      <button class="edb edt" data-t="hisab_employees" data-id="${e.id}">এডিট</button>
+      <button class="del" data-t="hisab_employees" data-id="${e.id}">মুছুন</button>
+    </div></div>`).join('') : '<div class="empty">এখনো কোনো কর্মচারী নেই।</div>'; }
   if(salBox){
     if($('salRecMonth')&&!$('salRecMonth').value) $('salRecMonth').value=monthStr();
     const ym=($('salRecMonth')?$('salRecMonth').value:'')||monthStr();
@@ -1573,8 +1577,9 @@ function renderSalary(){
     salBox.innerHTML = list.length ? head+list.map(s=>`<div class="item"><div>
         <div class="t">${s.emp_name||''}</div>
         <div class="m">বেতন ${money(n(s.salary))} + বোনাস ${money(n(s.bonus))} − অগ্রিম ${money(n(s.advance))}${s.paid_date?' · পরিশোধ '+niceDate(s.paid_date):''}${s.note?' · '+s.note:''}</div>
-      </div><div style="text-align:right">
+      </div><div style="text-align:right;white-space:nowrap">
         <div class="amt pos">${money(n(s.net))}</div>
+        <button class="edb edt" data-t="hisab_salary" data-id="${s.id}">এডিট</button>
         <button class="del" data-t="hisab_salary" data-id="${s.id}">মুছুন</button>
       </div></div>`).join('') : head+'<div class="empty">এই মাসে এখনো কাউকে বেতন দেওয়া হয়নি।</div>';
   }
@@ -2845,14 +2850,31 @@ const EDIT_FIELDS={
     {k:'qty',label:'পিস',type:'int'},
     {k:'damaged',label:'ড্যামেজ হয়েছে',type:'check',virtual:true},
   ],
+  hisab_employees:[
+    {k:'name',label:'নাম',type:'text'},
+    {k:'mobile',label:'মোবাইল নম্বর',type:'text'},
+    {k:'join_date',label:'জয়েন ডেট',type:'date'},
+    {k:'monthly_salary',label:'মাসিক বেতন ৳',type:'num'},
+    {k:'note',label:'নোট',type:'text'},
+  ],
+  hisab_salary:[
+    {k:'emp_name',label:'কর্মচারীর নাম',type:'text'},
+    {k:'pay_month',label:'কোন মাসের বেতন',type:'month'},
+    {k:'salary',label:'মোট বেতন ৳',type:'num'},
+    {k:'bonus',label:'বোনাস ৳',type:'num'},
+    {k:'advance',label:'অগ্রিম ৳',type:'num'},
+    {k:'paid_date',label:'পরিশোধের তারিখ',type:'date'},
+    {k:'note',label:'নোট',type:'text'},
+  ],
 };
-const TBL_BN={hisab_sales:'বিক্রি',hisab_returns:'রিটার্ন',hisab_expenses:'খরচ'};
+const TBL_BN={hisab_sales:'বিক্রি',hisab_returns:'রিটার্ন',hisab_expenses:'খরচ',hisab_employees:'কর্মচারী',hisab_salary:'বেতন'};
 let EDITING=null;
 
-function arrFor(table){ return table==='hisab_sales'?SALES:table==='hisab_returns'?RETURNS:EXPENSES; }
+function arrFor(table){ return table==='hisab_sales'?SALES:table==='hisab_returns'?RETURNS:table==='hisab_expenses'?EXPENSES:table==='hisab_employees'?EMPLOYEES:table==='hisab_salary'?SALARY:[]; }
 function editFieldHTML(f,val){
   const id='ef_'+f.k;
   if(f.type==='date') return `<div class="field"><label>${f.label}</label><input id="${id}" type="date" value="${val||''}"></div>`;
+  if(f.type==='month') return `<div class="field"><label>${f.label}</label><input id="${id}" type="month" value="${val||''}"></div>`;
   if(f.type==='int'||f.type==='num') return `<div class="field"><label>${f.label}</label><input id="${id}" type="number" step="${f.type==='int'?'1':'0.01'}" value="${val??''}"></div>`;
   if(f.type==='text') return `<div class="field"><label>${f.label}</label><input id="${id}" type="text" value="${(val||'').toString().replace(/"/g,'&quot;')}"></div>`;
   if(f.type==='check') return `<div class="row-check"><input id="${id}" type="checkbox" ${val?'checked':''}><label for="${id}">${f.label}</label></div>`;
@@ -2887,6 +2909,7 @@ function collectEdit(){
     const info=saleUnitInfo(obj.product,obj.original_sale_date);
     obj.unit_product_cost = damaged ? (info?info.pc:n(row.unit_product_cost)) : 0;
   }
+  if(table==='hisab_salary'){ obj.net = n(obj.salary)+n(obj.bonus)-n(obj.advance); }
   return obj;
 }
 function fmtVal(v){ return (typeof v==='number') ? (Math.round(v*100)/100) : v; }
