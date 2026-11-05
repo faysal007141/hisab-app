@@ -608,13 +608,16 @@
 
     <div class="subpanel active" data-sub="emp">
       <div class="card">
-        <h2>কর্মচারী যোগ করুন<span class="sub">নাম, জয়েন ডেট, মাসিক বেতন</span></h2>
+        <h2>কর্মচারী যোগ করুন<span class="sub">নাম, মোবাইল, জয়েন ডেট, মাসিক বেতন</span></h2>
         <div class="grid">
           <div class="field"><label>নাম</label><input type="text" id="emp_name" placeholder="কর্মচারীর নাম"></div>
-          <div class="field"><label>জয়েন ডেট</label><input type="date" id="emp_join"></div>
+          <div class="field"><label>মোবাইল নম্বর</label><input type="text" id="emp_mobile" placeholder="01XXXXXXXXX" autocomplete="off"></div>
         </div>
-        <div class="field"><label>মাসিক বেতন ৳</label><input type="number" id="emp_salary" min="0" step="0.01" placeholder="0"></div>
-        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="emp_note" placeholder="যেমন: পদবি / মোবাইল"></div>
+        <div class="grid">
+          <div class="field"><label>জয়েন ডেট</label><input type="date" id="emp_join"></div>
+          <div class="field"><label>মাসিক বেতন ৳</label><input type="number" id="emp_salary" min="0" step="0.01" placeholder="0"></div>
+        </div>
+        <div class="field"><label>নোট (ঐচ্ছিক)</label><input type="text" id="emp_note" placeholder="যেমন: পদবি"></div>
         <button class="btn" id="emp_save">কর্মচারী যোগ করুন</button>
       </div>
       <div class="card"><h2>কর্মচারী তালিকা</h2><div class="list" id="empList"><div class="empty">লোড হচ্ছে…</div></div></div>
@@ -638,10 +641,11 @@
 
     <div class="subpanel" data-sub="pay">
       <div class="card">
-        <h2>বেতন পরিশোধ<span class="sub">অগ্রিম বাদে হাতে পাবে কত — নিজে থেকে হিসাব হবে</span></h2>
+        <h2>বেতন পরিশোধ<span class="sub">কোনো কর্মচারীকে বেতন দিলে এখানে রেকর্ড করুন — হাতে কত পাবে নিজে থেকে হিসাব হবে</span></h2>
+        <div class="infobar" style="margin-bottom:12px">👤 কর্মচারী বাছুন → বেতন নিজে থেকে বসবে → বোনাস দিলে বসান → অগ্রিম নিজে থেকে বাদ যাবে → <b>হাতে পাবে</b> দেখে <b>রেকর্ড করুন</b></div>
         <div class="grid">
           <div class="field"><label>কর্মচারী</label><select id="sal_emp"><option value="">— বাছুন —</option></select></div>
-          <div class="field"><label>মাস</label><input type="month" id="sal_month"></div>
+          <div class="field"><label>কোন মাসের বেতন</label><input type="month" id="sal_month"></div>
         </div>
         <div class="grid">
           <div class="field"><label>মোট বেতন ৳</label><input type="number" id="sal_amount" min="0" step="0.01" placeholder="0"></div>
@@ -658,7 +662,10 @@
     </div>
 
     <div class="subpanel" data-sub="rec">
-      <div class="card"><h2>বেতন রেকর্ড</h2><div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div></div>
+      <div class="card"><h2>বেতন রেকর্ড <span class="sub">কোন মাসে কাকে কত বেতন দেওয়া হয়েছে — মাস বাছাই করুন</span></h2>
+        <div class="field" style="max-width:240px"><label>মাস</label><input type="month" id="salRecMonth"></div>
+        <div class="list" id="salList"><div class="empty">লোড হচ্ছে…</div></div>
+      </div>
     </div>
   </section>
 
@@ -1554,16 +1561,23 @@ function renderSalary(){
   if(!isAdmin){ if(empBox)empBox.innerHTML=''; if(salBox)salBox.innerHTML=''; return; }
   if(sel){ const v=sel.value; sel.innerHTML='<option value="">— বাছুন —</option>'+EMPLOYEES.map(e=>`<option value="${e.id}">${e.name}</option>`).join(''); sel.value=v; }
   if(empBox){ empBox.innerHTML = EMPLOYEES.length ? EMPLOYEES.map(e=>`<div class="item"><div>
-      <div class="t">${e.name}</div>
+      <div class="t">${e.name}${e.mobile?' · 📱 '+e.mobile:''}</div>
       <div class="m">${e.join_date?'জয়েন '+niceDate(e.join_date)+' · ':''}বেতন ${money(n(e.monthly_salary))}${e.note?' · '+e.note:''}</div>
     </div><div style="text-align:right"><button class="del" data-t="hisab_employees" data-id="${e.id}">মুছুন</button></div></div>`).join('') : '<div class="empty">এখনো কোনো কর্মচারী নেই।</div>'; }
-  if(salBox){ salBox.innerHTML = SALARY.length ? SALARY.slice(0,30).map(s=>`<div class="item"><div>
-      <div class="t">${s.emp_name||''} · ${niceMonth(s.pay_month)}</div>
-      <div class="m">বেতন ${money(n(s.salary))} + বোনাস ${money(n(s.bonus))} − অগ্রিম ${money(n(s.advance))}${s.note?' · '+s.note:''}</div>
-    </div><div style="text-align:right">
-      <div class="amt pos">${money(n(s.net))}</div>
-      <button class="del" data-t="hisab_salary" data-id="${s.id}">মুছুন</button>
-    </div></div>`).join('') : '<div class="empty">এখনো কোনো বেতন রেকর্ড নেই।</div>'; }
+  if(salBox){
+    if($('salRecMonth')&&!$('salRecMonth').value) $('salRecMonth').value=monthStr();
+    const ym=($('salRecMonth')?$('salRecMonth').value:'')||monthStr();
+    const list=SALARY.filter(s=>(s.pay_month||'')===ym);
+    const total=list.reduce((a,s)=>a+n(s.net),0);
+    const head=`<div class="infobar" style="margin-bottom:10px">${niceMonth(ym)} — <b>${list.length}</b> জনকে বেতন দেওয়া হয়েছে · মোট পরিশোধ <b>${money(total)}</b></div>`;
+    salBox.innerHTML = list.length ? head+list.map(s=>`<div class="item"><div>
+        <div class="t">${s.emp_name||''}</div>
+        <div class="m">বেতন ${money(n(s.salary))} + বোনাস ${money(n(s.bonus))} − অগ্রিম ${money(n(s.advance))}${s.paid_date?' · পরিশোধ '+niceDate(s.paid_date):''}${s.note?' · '+s.note:''}</div>
+      </div><div style="text-align:right">
+        <div class="amt pos">${money(n(s.net))}</div>
+        <button class="del" data-t="hisab_salary" data-id="${s.id}">মুছুন</button>
+      </div></div>`).join('') : head+'<div class="empty">এই মাসে এখনো কাউকে বেতন দেওয়া হয়নি।</div>';
+  }
 }
 
 /* ================= হাজিরা (attendance) ================= */
@@ -2442,14 +2456,15 @@ $('ci_save').onclick=async()=>{
 /* ---------- বেতন ---------- */
 $('emp_save').onclick=async()=>{
   const b=$('emp_save');
-  const rec={ name:$('emp_name').value.trim(), join_date:$('emp_join').value||null,
+  const rec={ name:$('emp_name').value.trim(), mobile:$('emp_mobile').value.trim()||null, join_date:$('emp_join').value||null,
     monthly_salary:n($('emp_salary').value), note:$('emp_note').value.trim()||null };
   if(!rec.name){ toast('নাম দিন',true); return; }
   b.disabled=true; const {error}=await db.from('hisab_employees').insert(rec); b.disabled=false;
   if(error){ toast('সেভ হয়নি: '+(error.message||''),true); return; }
-  ['emp_name','emp_join','emp_salary','emp_note'].forEach(id=>$(id).value='');
+  ['emp_name','emp_mobile','emp_join','emp_salary','emp_note'].forEach(id=>$(id).value='');
   toast('কর্মচারী যোগ হয়েছে ✓'); await loadAll();
 };
+{ const srm=$('salRecMonth'); if(srm) srm.addEventListener('change',renderSalary); }
 function salNet(){ const net=n($('sal_amount').value)+n($('sal_bonus').value)-n($('sal_adv').value); $('sal_net').textContent='হাতে পাবে: '+money(net); return net; }
 ['sal_amount','sal_bonus','sal_adv'].forEach(id=>{ const el=$(id); if(el) el.addEventListener('input',salNet); });
 $('sal_emp').addEventListener('change',()=>{ const e=EMPLOYEES.find(x=>String(x.id)===$('sal_emp').value); if(e && !$('sal_amount').value){ $('sal_amount').value=e.monthly_salary; } syncSalAdvance(); });
