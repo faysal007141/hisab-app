@@ -1551,8 +1551,9 @@ function renderCashIn(){
   box.innerHTML=head+shown.map(c=>`<div class="item"><div>
       <div class="t">${c.account} <span class="badge oh">টাকা যোগ</span></div>
       <div class="m">${niceDate(c.cash_date)}${c.note?' · '+c.note:''}</div>
-    </div><div style="text-align:right">
+    </div><div style="text-align:right;white-space:nowrap">
       <div class="amt pos">+${money(n(c.amount))}</div>
+      <button class="edt" data-t="hisab_cashin" data-id="${c.id}">এডিট</button>
       <button class="del" data-t="hisab_cashin" data-id="${c.id}">মুছুন</button>
     </div></div>`).join('');
 }
@@ -2857,6 +2858,12 @@ const EDIT_FIELDS={
     {k:'monthly_salary',label:'মাসিক বেতন ৳',type:'num'},
     {k:'note',label:'নোট',type:'text'},
   ],
+  hisab_cashin:[
+    {k:'cash_date',label:'তারিখ',type:'date'},
+    {k:'account',label:'একাউন্ট',type:'select',options:[['Cash','Cash'],['Bank','Bank'],['bKash','bKash']]},
+    {k:'amount',label:'টাকা ৳',type:'num'},
+    {k:'note',label:'নোট',type:'text'},
+  ],
   hisab_salary:[
     {k:'emp_name',label:'কর্মচারীর নাম',type:'text'},
     {k:'pay_month',label:'কোন মাসের বেতন',type:'month'},
@@ -2867,10 +2874,10 @@ const EDIT_FIELDS={
     {k:'note',label:'নোট',type:'text'},
   ],
 };
-const TBL_BN={hisab_sales:'বিক্রি',hisab_returns:'রিটার্ন',hisab_expenses:'খরচ',hisab_employees:'কর্মচারী',hisab_salary:'বেতন'};
+const TBL_BN={hisab_sales:'বিক্রি',hisab_returns:'রিটার্ন',hisab_expenses:'খরচ',hisab_employees:'কর্মচারী',hisab_salary:'বেতন',hisab_cashin:'টাকা যোগ'};
 let EDITING=null;
 
-function arrFor(table){ return table==='hisab_sales'?SALES:table==='hisab_returns'?RETURNS:table==='hisab_expenses'?EXPENSES:table==='hisab_employees'?EMPLOYEES:table==='hisab_salary'?SALARY:[]; }
+function arrFor(table){ return table==='hisab_sales'?SALES:table==='hisab_returns'?RETURNS:table==='hisab_expenses'?EXPENSES:table==='hisab_cashin'?CASHIN:table==='hisab_employees'?EMPLOYEES:table==='hisab_salary'?SALARY:[]; }
 function editFieldHTML(f,val){
   const id='ef_'+f.k;
   if(f.type==='date') return `<div class="field"><label>${f.label}</label><input id="${id}" type="date" value="${val||''}"></div>`;
